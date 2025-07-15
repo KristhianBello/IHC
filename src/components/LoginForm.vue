@@ -76,14 +76,22 @@ export default {
       this.showPassword = !this.showPassword;
     },
     handleLogin() {
-      // Aquí va la lógica para iniciar sesión. Puedes llamar a tu API, validar, etc.
-      // Ejemplo simple:
+      // Validar campos
       if (!this.email || !this.password) {
         alert("Por favor, completa todos los campos.");
         return;
       }
-      // Aquí deberías hacer la petición al backend (usando fetch o axios)
-      alert(`Inicio de sesión con: ${this.email} / ${this.password}`);
+      
+      // Simulación de validación de credenciales
+      // En un proyecto real, aquí harías una petición al backend
+      if (this.email && this.password) {
+        // Credenciales válidas - redirigir a la página principal
+        this.$router.push('/Foro');
+        alert("Inicio de sesión exitoso");
+
+      } else {
+        alert("Credenciales incorrectas");
+      }
     },
   },
 };

@@ -40,6 +40,26 @@
         </button>
       </div>
 
+      <!-- Barra de búsqueda -->
+      <div class="search-container">
+        <div class="search-box">
+          <input 
+            type="text" 
+            v-model="busqueda" 
+            placeholder="🔍 Buscar publicaciones..." 
+            class="search-input"
+          />
+          <button 
+            v-if="busqueda" 
+            @click="limpiarBusqueda" 
+            class="btn-clear-search"
+            type="button"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
       <!-- Formulario de nueva publicación -->
       <form 
         v-if="mostrarFormulario" 
@@ -76,8 +96,19 @@
 
       <!-- Lista de publicaciones -->
       <div class="posts-container">
+        <!-- Mensaje cuando no se encuentran resultados -->
+        <div v-if="publicacionesFiltradas.length === 0 && busqueda" class="no-results">
+          <div class="no-results-icon">🔍</div>
+          <h3>No se encontraron publicaciones</h3>
+          <p>No hay publicaciones que coincidan con tu búsqueda: "<strong>{{ busqueda }}</strong>"</p>
+          <button @click="limpiarBusqueda" class="btn btn-primary">
+            Limpiar búsqueda
+          </button>
+        </div>
+
+        <!-- Publicaciones -->
         <article 
-          v-for="(post, index) in publicaciones" 
+          v-for="(post, index) in publicacionesFiltradas" 
           :key="index" 
           class="post-card"
         >
@@ -141,9 +172,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const mostrarFormulario = ref(false)
+const busqueda = ref('')
 
 const publicaciones = ref([
   {
@@ -165,12 +197,31 @@ const nueva = ref({
   likes: 0,
 })
 
+// Computed property para filtrar publicaciones
+const publicacionesFiltradas = computed(() => {
+  if (!busqueda.value) {
+    return publicaciones.value
+  }
+  
+  const termino = busqueda.value.toLowerCase()
+  return publicaciones.value.filter(post => 
+    post.titulo.toLowerCase().includes(termino) ||
+    post.contenido.toLowerCase().includes(termino) ||
+    post.autor.toLowerCase().includes(termino) ||
+    post.ubicacion.toLowerCase().includes(termino)
+  )
+})
+
 function agregarPublicacion() {
   publicaciones.value.unshift({ ...nueva.value })
   nueva.value.titulo = ''
   nueva.value.contenido = ''
   nueva.value.ubicacion = ''
   mostrarFormulario.value = false
+}
+
+function limpiarBusqueda() {
+  busqueda.value = ''
 }
 </script>
 
@@ -298,8 +349,54 @@ function agregarPublicacion() {
   background-color: var(--hover-green);
 }
 
-.btn-block {
+/* Barra de búsqueda */
+.search-container {
+  margin-bottom: 2rem;
+}
+
+.search-box {
+  position: relative;
+  max-width: 500px;
+}
+
+.search-input {
   width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--gray-border);
+  border-radius: 25px;
+  font-size: 1rem;
+  background-color: var(--white);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+}
+
+.btn-clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-search:hover {
+  background-color: var(--gray-border);
+  color: var(--primary-green);
 }
 
 /* Formulario de publicación */
@@ -406,6 +503,35 @@ function agregarPublicacion() {
 }
 
 .post-actions button:hover {
+  color: var(--primary-green);
+}
+
+/* Mensaje sin resultados */
+.no-results {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.no-results-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-results h3 {
+  color: var(--dark-text);
+  margin-bottom: 1rem;
+}
+
+.no-results p {
+  color: #777;
+  margin-bottom: 1.5rem;
+}
+
+.no-results strong {
   color: var(--primary-green);
 }
 
