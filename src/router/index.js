@@ -3,6 +3,7 @@ import LoginView from '@/views/LoginView.vue'
 import SolicitudAdopcion from '@/components/Solicitud.vue'
 import Foro from '@/components/Foro.vue'
 import RegisterView from '@/views/RegisterView.vue'
+import AdoptionsView from '@/views/AdoptionsView.vue'
 
 
 const routes = [
@@ -21,15 +22,16 @@ const routes = [
     name: 'Solicitud',
     component: SolicitudAdopcion,
   },
-
   {
-  path: '/registro',
-  name: 'registro',
-  component: RegisterView,
-},
-
-
-
+    path: '/adopciones',
+    name: 'adopciones',
+    component: AdoptionsView,
+  },
+  {
+    path: '/registro',
+    name: 'registro',
+    component: RegisterView,
+  },
 ]
 
 const router = createRouter({

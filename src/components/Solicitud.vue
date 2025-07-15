@@ -3,8 +3,8 @@
     <header class="header">
       <img :src="logo" alt="Logo Descubre tu barrio" class="logo" />
       <nav>
-        <RouterLink to="/" class="btn btn-outline">
-          <i class="fas fa-arrow-left"></i> Volver al inicio
+        <RouterLink to="/foro" class="btn btn-outline">
+          <i class="fas fa-arrow-left"></i> Volver al foro
         </RouterLink>
       </nav>
     </header>
@@ -18,29 +18,29 @@
         </p>
       </div>
 
-      <form class="adoption-form">
+      <form class="adoption-form" @submit.prevent="handleSubmit">
         <!-- INFORMACIÓN PERSONAL -->
         <section class="form-section">
           <h2><i class="fas fa-user"></i> Información personal</h2>
           <div class="form-row">
             <div class="form-group">
               <label for="fullname">Nombre completo *</label>
-              <input type="text" id="fullname" placeholder="Ej. Ana López" required />
+              <input type="text" id="fullname" v-model="formData.fullname" placeholder="Ej. Ana López" required />
             </div>
             <div class="form-group">
               <label for="email">Correo electrónico *</label>
-              <input type="email" id="email" placeholder="Ej. ana@email.com" required />
+              <input type="email" id="email" v-model="formData.email" placeholder="Ej. ana@email.com" required />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="phone">Teléfono *</label>
-              <input type="tel" id="phone" placeholder="Ej. 0987654321" required />
+              <input type="tel" id="phone" v-model="formData.phone" placeholder="Ej. 0987654321" required />
             </div>
             <div class="form-group">
               <label for="organization">Organización (opcional)</label>
-              <input type="text" id="organization" placeholder="Nombre de tu grupo o comunidad" />
+              <input type="text" id="organization" v-model="formData.organization" placeholder="Nombre de tu grupo o comunidad" />
             </div>
           </div>
         </section>
@@ -50,7 +50,7 @@
           <h2><i class="fas fa-map-marker-alt"></i> Espacio a adoptar</h2>
           <div class="form-group">
             <label for="space-name">Nombre del espacio *</label>
-            <input type="text" id="space-name" placeholder="Ej. Parque Central Norte" required />
+            <input type="text" id="space-name" v-model="formData.spaceName" placeholder="Ej. Parque Central Norte" required />
           </div>
 
           <div class="form-group">
@@ -58,13 +58,15 @@
             <input
               type="text"
               id="space-location"
+              v-model="formData.spaceLocation"
               placeholder="Dirección o punto de referencia"
               required
             />
-            <div id="map-preview" class="map-placeholder">
-              <!-- Aquí puede ir un mapa interactivo si lo deseas -->
-            </div>
-            <small>Selecciona o escribe la ubicación del lugar.</small>
+            <MapSelector 
+              v-model="selectedLocation"
+              @locationSelected="onLocationSelected"
+            />
+            <small>Haz clic en el mapa para seleccionar la ubicación exacta del espacio.</small>
           </div>
         </section>
 
@@ -74,17 +76,17 @@
           <div class="form-group">
             <label>¿Qué actividades realizarás? *</label>
             <div class="checkbox-group">
-              <label><input type="checkbox" value="cleaning" /> Limpieza</label>
-              <label><input type="checkbox" value="gardening" /> Jardinería</label>
-              <label><input type="checkbox" value="painting" /> Pintura</label>
-              <label><input type="checkbox" value="repairs" /> Reparaciones</label>
-              <label><input type="checkbox" value="other" /> Otra</label>
+              <label><input type="checkbox" value="cleaning" v-model="formData.activities" /> Limpieza</label>
+              <label><input type="checkbox" value="gardening" v-model="formData.activities" /> Jardinería</label>
+              <label><input type="checkbox" value="painting" v-model="formData.activities" /> Pintura</label>
+              <label><input type="checkbox" value="repairs" v-model="formData.activities" /> Reparaciones</label>
+              <label><input type="checkbox" value="other" v-model="formData.activities" /> Otra</label>
             </div>
           </div>
 
           <div class="form-group">
             <label for="frequency">Frecuencia estimada *</label>
-            <select id="frequency" required>
+            <select id="frequency" v-model="formData.frequency" required>
               <option value="">Seleccione...</option>
               <option value="weekly">Semanal</option>
               <option value="biweekly">Quincenal</option>
@@ -96,13 +98,14 @@
 
           <div class="form-group">
             <label for="volunteers">Número estimado de voluntarios *</label>
-            <input type="number" id="volunteers" min="1" placeholder="Ej. 10" required />
+            <input type="number" id="volunteers" v-model="formData.volunteers" min="1" placeholder="Ej. 10" required />
           </div>
 
           <div class="form-group">
             <label for="description">Descripción del plan *</label>
             <textarea
               id="description"
+              v-model="formData.description"
               rows="4"
               placeholder="Describe brevemente las acciones y metas de tu adopción"
               required
@@ -135,7 +138,88 @@
 </template>
 
 <script setup>
-const logo = new URL('@/assets/LogoIHC.png', import.meta.url).href
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import MapSelector from './MapSelector.vue'
+import { addAdoption } from '@/stores/adoptionsStore'
+
+const router = useRouter()
+const logo = new URL('@/assets/logo.png', import.meta.url).href
+
+// Form data
+const formData = ref({
+  fullname: '',
+  email: '',
+  phone: '',
+  organization: '',
+  spaceName: '',
+  spaceLocation: '',
+  activities: [],
+  frequency: '',
+  volunteers: '',
+  description: ''
+})
+
+const selectedLocation = ref(null)
+
+// Handle location selection
+function onLocationSelected(location) {
+  formData.value.spaceLocation = location.address
+}
+
+// Handle form submission
+function handleSubmit() {
+  // Validate required fields
+  if (!formData.value.fullname || !formData.value.email || !formData.value.phone || 
+      !formData.value.spaceName || !formData.value.spaceLocation || 
+      !formData.value.frequency || !formData.value.volunteers || !formData.value.description) {
+    alert('Por favor, completa todos los campos requeridos.')
+    return
+  }
+  
+  // Create adoption data
+  const adoptionData = {
+    ...formData.value,
+    location: selectedLocation.value
+  }
+  
+  try {
+    // Add adoption to store
+    const newAdoption = addAdoption(adoptionData)
+    
+    console.log('Nueva adopción creada:', newAdoption)
+    
+    // Show success message
+    alert('¡Solicitud enviada exitosamente! Tu adopción ha sido registrada y está pendiente de aprobación.')
+    
+    // Reset form
+    resetForm()
+    
+    // Redirect to adoptions view or foro
+    router.push('/foro')
+    
+  } catch (error) {
+    console.error('Error al enviar la solicitud:', error)
+    alert('Hubo un error al enviar la solicitud. Por favor, intenta nuevamente.')
+  }
+}
+
+// Reset form function
+function resetForm() {
+  formData.value = {
+    fullname: '',
+    email: '',
+    phone: '',
+    organization: '',
+    spaceName: '',
+    spaceLocation: '',
+    activities: [],
+    frequency: '',
+    volunteers: '',
+    description: ''
+  }
+  selectedLocation.value = null
+}
 </script>
 
 <style scoped>

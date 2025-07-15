@@ -85,8 +85,8 @@ export default {
       // Simulación de validación de credenciales
       // En un proyecto real, aquí harías una petición al backend
       if (this.email && this.password) {
-        // Credenciales válidas - redirigir a la página principal
-        this.$router.push('/Foro');
+        // Credenciales válidas - redirigir a la página del foro
+        this.$router.push('/foro');
         alert("Inicio de sesión exitoso");
 
       } else {

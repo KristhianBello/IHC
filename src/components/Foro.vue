@@ -22,6 +22,11 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/adopciones" class="nav-link" active-class="active">
+            📋 Mis adopciones
+          </router-link>
+        </li>
+        <li>
           <router-link to="/solicitud" class="nav-link" active-class="active">
             🌲 Solicitar adopción
           </router-link>
@@ -87,6 +92,10 @@
             type="text" 
             v-model="nueva.ubicacion" 
             placeholder="Ubicación 📍" 
+          />
+          <MapSelector 
+            v-model="nuevaUbicacion"
+            @locationSelected="onLocationSelected"
           />
         </div>
         <button type="submit" class="btn btn-primary btn-block">
@@ -173,9 +182,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import MapSelector from './MapSelector.vue'
 
 const mostrarFormulario = ref(false)
 const busqueda = ref('')
+const nuevaUbicacion = ref(null)
 
 const publicaciones = ref([
   {
@@ -185,6 +196,7 @@ const publicaciones = ref([
     contenido: 'Este fin de semana organizamos una jornada de limpieza en el Parque Central. Logramos recoger más de 20 bolsas de basura y podar los arbustos. ¡Gracias a todos los voluntarios!',
     ubicacion: 'Parque Central, Sector Norte',
     likes: 24,
+    coordenadas: { lat: -2.1499, lng: -79.9663 }
   },
 ])
 
@@ -195,6 +207,7 @@ const nueva = ref({
   contenido: '',
   ubicacion: '',
   likes: 0,
+  coordenadas: null
 })
 
 // Computed property para filtrar publicaciones
@@ -212,11 +225,26 @@ const publicacionesFiltradas = computed(() => {
   )
 })
 
+function onLocationSelected(location) {
+  nueva.value.ubicacion = location.address
+  nueva.value.coordenadas = { lat: location.lat, lng: location.lng }
+}
+
 function agregarPublicacion() {
-  publicaciones.value.unshift({ ...nueva.value })
+  const publicacionCompleta = { ...nueva.value }
+  if (nuevaUbicacion.value) {
+    publicacionCompleta.coordenadas = {
+      lat: nuevaUbicacion.value.lat,
+      lng: nuevaUbicacion.value.lng
+    }
+  }
+  
+  publicaciones.value.unshift(publicacionCompleta)
   nueva.value.titulo = ''
   nueva.value.contenido = ''
   nueva.value.ubicacion = ''
+  nueva.value.coordenadas = null
+  nuevaUbicacion.value = null
   mostrarFormulario.value = false
 }
 
