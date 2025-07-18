@@ -1,34 +1,103 @@
 import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabaseClient'
 
 // Estado global para las adopciones
 const adoptions = ref([])
+const loading = ref(false)
 
 // Función para agregar una nueva adopción
-export function addAdoption(adoption) {
-  const newAdoption = {
-    id: Date.now(), // ID único basado en timestamp
-    ...adoption,
-    status: 'pendiente', // Estados: pendiente, aprobada, rechazada
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+export async function addAdoption(adoption) {
+  loading.value = true
+
+  try {
+    // Obtener el usuario actual
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      throw new Error('Usuario no autenticado')
+    }
+
+    const newAdoption = {
+      usuario_id: user.id,
+      nombre_espacio: adoption.spaceName,
+      ubicacion_espacio: adoption.spaceLocation,
+      descripcion: adoption.description,
+      actividades: adoption.activities || [],
+      frecuencia: adoption.frequency,
+      num_voluntarios: parseInt(adoption.volunteers),
+      coordenadas: adoption.location ? {
+        lat: adoption.location.lat,
+        lng: adoption.location.lng
+      } : null,
+      estado: 'pendiente'
+    }
+
+    const { data, error } = await supabase
+      .from('adopciones')
+      .insert([newAdoption])
+      .select()
+
+    if (error) throw error
+
+    // Actualizar el estado local
+    await loadAdoptions()
+
+    return {
+      success: true,
+      adoption: data[0],
+      message: 'Adopción creada exitosamente'
+    }
+  } catch (error) {
+    console.error('Error al crear adopción:', error)
+    return {
+      success: false,
+      error: error.message || 'Error al crear la adopción'
+    }
+  } finally {
+    loading.value = false
   }
-  
-  adoptions.value.push(newAdoption)
-  
-  // Guardar en localStorage para persistencia
-  localStorage.setItem('adoptions', JSON.stringify(adoptions.value))
-  
-  return newAdoption
 }
 
-// Función para obtener todas las adopciones
+// Función para obtener todas las adopciones del usuario actual
+export async function loadAdoptions() {
+  loading.value = true
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      adoptions.value = []
+      return { success: true, adoptions: [] }
+    }
+
+    const { data, error } = await supabase
+      .from('adopciones')
+      .select('*')
+      .eq('usuario_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    adoptions.value = data || []
+
+    return {
+      success: true,
+      adoptions: adoptions.value
+    }
+  } catch (error) {
+    console.error('Error al cargar adopciones:', error)
+    return {
+      success: false,
+      error: error.message || 'Error al cargar las adopciones'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// Función para obtener todas las adopciones (solo las locales)
 export function getAdoptions() {
   return adoptions.value
-}
-
-// Función para obtener adopciones por usuario
-export function getAdoptionsByUser(userEmail) {
-  return adoptions.value.filter(adoption => adoption.email === userEmail)
 }
 
 // Función para obtener adopción por ID
@@ -37,35 +106,112 @@ export function getAdoptionById(id) {
 }
 
 // Función para actualizar el estado de una adopción
-export function updateAdoptionStatus(id, newStatus) {
-  const adoption = adoptions.value.find(a => a.id === id)
-  if (adoption) {
-    adoption.status = newStatus
-    adoption.updatedAt = new Date().toISOString()
-    localStorage.setItem('adoptions', JSON.stringify(adoptions.value))
-    return adoption
+export async function updateAdoptionStatus(id, newStatus) {
+  loading.value = true
+
+  try {
+    const { data, error } = await supabase
+      .from('adopciones')
+      .update({
+        estado: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+
+    if (error) throw error
+
+    // Actualizar el estado local
+    await loadAdoptions()
+
+    return {
+      success: true,
+      adoption: data[0],
+      message: 'Estado actualizado exitosamente'
+    }
+  } catch (error) {
+    console.error('Error al actualizar estado:', error)
+    return {
+      success: false,
+      error: error.message || 'Error al actualizar el estado'
+    }
+  } finally {
+    loading.value = false
   }
-  return null
 }
 
 // Función para eliminar una adopción
-export function deleteAdoption(id) {
-  const index = adoptions.value.findIndex(a => a.id === id)
-  if (index > -1) {
-    const deleted = adoptions.value.splice(index, 1)[0]
-    localStorage.setItem('adoptions', JSON.stringify(adoptions.value))
-    return deleted
+export async function deleteAdoption(id) {
+  loading.value = true
+
+  try {
+    const { error } = await supabase
+      .from('adopciones')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    // Actualizar el estado local
+    await loadAdoptions()
+
+    return {
+      success: true,
+      message: 'Adopción eliminada exitosamente'
+    }
+  } catch (error) {
+    console.error('Error al eliminar adopción:', error)
+    return {
+      success: false,
+      error: error.message || 'Error al eliminar la adopción'
+    }
+  } finally {
+    loading.value = false
   }
-  return null
+}
+
+// Función para actualizar una adopción
+export async function updateAdoption(id, updatedData) {
+  loading.value = true
+
+  try {
+    const { data, error } = await supabase
+      .from('adopciones')
+      .update({
+        ...updatedData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+
+    if (error) throw error
+
+    // Actualizar el estado local
+    await loadAdoptions()
+
+    return {
+      success: true,
+      adoption: data[0],
+      message: 'Adopción actualizada exitosamente'
+    }
+  } catch (error) {
+    console.error('Error al actualizar adopción:', error)
+    return {
+      success: false,
+      error: error.message || 'Error al actualizar la adopción'
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 // Computed properties para estadísticas
 export const adoptionsStats = computed(() => {
   const total = adoptions.value.length
-  const pending = adoptions.value.filter(a => a.status === 'pendiente').length
-  const approved = adoptions.value.filter(a => a.status === 'aprobada').length
-  const rejected = adoptions.value.filter(a => a.status === 'rechazada').length
-  
+  const pending = adoptions.value.filter(a => a.estado === 'pendiente').length
+  const approved = adoptions.value.filter(a => a.estado === 'aprobada').length
+  const rejected = adoptions.value.filter(a => a.estado === 'rechazada').length
+
   return {
     total,
     pending,
@@ -74,43 +220,15 @@ export const adoptionsStats = computed(() => {
   }
 })
 
-// Función para inicializar el store (cargar desde localStorage)
-export function initializeAdoptionsStore() {
-  try {
-    const savedAdoptions = localStorage.getItem('adoptions')
-    if (savedAdoptions) {
-      adoptions.value = JSON.parse(savedAdoptions)
-    }
-  } catch (error) {
-    console.error('Error loading adoptions from localStorage:', error)
-    adoptions.value = []
-  }
+// Función para inicializar el store
+export async function initializeAdoptionsStore() {
+  await loadAdoptions()
 }
 
-// Función para limpiar todas las adopciones (solo para desarrollo)
-export function clearAllAdoptions() {
+// Función para limpiar todas las adopciones locales
+export function clearLocalAdoptions() {
   adoptions.value = []
-  localStorage.removeItem('adoptions')
 }
 
-// Función para exportar datos (para respaldo)
-export function exportAdoptions() {
-  return {
-    adoptions: adoptions.value,
-    exportedAt: new Date().toISOString(),
-    version: '1.0'
-  }
-}
-
-// Función para importar datos (para restaurar respaldo)
-export function importAdoptions(data) {
-  if (data && data.adoptions && Array.isArray(data.adoptions)) {
-    adoptions.value = data.adoptions
-    localStorage.setItem('adoptions', JSON.stringify(adoptions.value))
-    return true
-  }
-  return false
-}
-
-// Inicializar automáticamente al importar el módulo
-initializeAdoptionsStore()
+// Exportar estados reactivos
+export { adoptions, loading }

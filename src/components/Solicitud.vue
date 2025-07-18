@@ -62,7 +62,7 @@
               placeholder="Dirección o punto de referencia"
               required
             />
-            <MapSelector 
+            <MapSelector
               v-model="selectedLocation"
               @locationSelected="onLocationSelected"
             />
@@ -138,6 +138,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'SolicitudAdopcion' })
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MapSelector from './MapSelector.vue'
@@ -168,36 +169,34 @@ function onLocationSelected(location) {
 }
 
 // Handle form submission
-function handleSubmit() {
+async function handleSubmit() {
   // Validate required fields
-  if (!formData.value.fullname || !formData.value.email || !formData.value.phone || 
-      !formData.value.spaceName || !formData.value.spaceLocation || 
+  if (!formData.value.fullname || !formData.value.email || !formData.value.phone ||
+      !formData.value.spaceName || !formData.value.spaceLocation ||
       !formData.value.frequency || !formData.value.volunteers || !formData.value.description) {
     alert('Por favor, completa todos los campos requeridos.')
     return
   }
-  
-  // Create adoption data
-  const adoptionData = {
-    ...formData.value,
-    location: selectedLocation.value
-  }
-  
+
   try {
-    // Add adoption to store
-    const newAdoption = addAdoption(adoptionData)
-    
-    console.log('Nueva adopción creada:', newAdoption)
-    
-    // Show success message
-    alert('¡Solicitud enviada exitosamente! Tu adopción ha sido registrada y está pendiente de aprobación.')
-    
-    // Reset form
-    resetForm()
-    
-    // Redirect to adoptions view or foro
-    router.push('/foro')
-    
+    // Add adoption to Supabase
+    const result = await addAdoption(formData.value)
+
+    if (result.success) {
+      console.log('Nueva adopción creada:', result.adoption)
+
+      // Show success message
+      alert('¡Solicitud enviada exitosamente! Tu adopción ha sido registrada y está pendiente de aprobación.')
+
+      // Reset form
+      resetForm()
+
+      // Redirect to adoptions view
+      router.push('/adopciones')
+    } else {
+      alert('Error: ' + result.error)
+    }
+
   } catch (error) {
     console.error('Error al enviar la solicitud:', error)
     alert('Hubo un error al enviar la solicitud. Por favor, intenta nuevamente.')
@@ -341,11 +340,10 @@ function resetForm() {
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
   display: flex;
   align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
   gap: 8px;
 }
 
@@ -434,25 +432,25 @@ i.fas {
     flex-direction: column;
     gap: 0;
   }
-  
+
   .form-container {
     padding: 0;
   }
-  
+
   .adoption-form {
     padding: 1.5rem;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
   }
-  
+
   .logo {
     margin-bottom: 0.5rem;
   }
-  
+
   .checkbox-group {
     flex-direction: column;
     gap: 0.5rem;

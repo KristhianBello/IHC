@@ -47,8 +47,8 @@
         <option value="aprobada">Aprobadas</option>
         <option value="rechazada">Rechazadas</option>
       </select>
-      <input 
-        v-model="searchTerm" 
+      <input
+        v-model="searchTerm"
         placeholder="Buscar por nombre de espacio..."
         class="search-input"
       />
@@ -65,57 +65,57 @@
         </RouterLink>
       </div>
 
-      <div 
-        v-for="adoption in filteredAdoptions" 
+      <div
+        v-for="adoption in filteredAdoptions"
         :key="adoption.id"
         class="adoption-card"
       >
         <div class="adoption-header">
           <div class="adoption-info">
-            <h3>{{ adoption.spaceName }}</h3>
-            <p class="location">📍 {{ adoption.spaceLocation }}</p>
-            <p class="date">📅 {{ formatDate(adoption.createdAt) }}</p>
+            <h3>{{ adoption.nombre_espacio }}</h3>
+            <p class="location">📍 {{ adoption.ubicacion_espacio }}</p>
+            <p class="date">📅 {{ formatDate(adoption.created_at) }}</p>
           </div>
           <div class="adoption-status">
-            <span :class="['status-badge', adoption.status]">
-              {{ getStatusText(adoption.status) }}
+            <span :class="['status-badge', adoption.estado]">
+              {{ getStatusText(adoption.estado) }}
             </span>
           </div>
         </div>
-        
+
         <div class="adoption-details">
           <div class="detail-item">
-            <strong>Frecuencia:</strong> {{ getFrequencyText(adoption.frequency) }}
+            <strong>Frecuencia:</strong> {{ getFrequencyText(adoption.frecuencia) }}
           </div>
           <div class="detail-item">
-            <strong>Voluntarios:</strong> {{ adoption.volunteers }} personas
+            <strong>Voluntarios:</strong> {{ adoption.num_voluntarios }} personas
           </div>
           <div class="detail-item">
-            <strong>Descripción:</strong> {{ adoption.description }}
+            <strong>Descripción:</strong> {{ adoption.descripcion }}
           </div>
-          <div v-if="adoption.location" class="detail-item">
-            <strong>Coordenadas:</strong> {{ adoption.location.lat?.toFixed(6) }}, {{ adoption.location.lng?.toFixed(6) }}
+          <div v-if="adoption.coordenadas" class="detail-item">
+            <strong>Coordenadas:</strong> {{ adoption.coordenadas.lat?.toFixed(6) }}, {{ adoption.coordenadas.lng?.toFixed(6) }}
           </div>
         </div>
-        
+
         <div class="adoption-actions">
-          <button 
+          <button
             @click="viewDetails(adoption)"
             class="btn btn-outline btn-sm"
           >
             <i class="fas fa-eye"></i> Ver detalles
           </button>
-          <button 
+          <button
             @click="editAdoption(adoption)"
             class="btn btn-secondary btn-sm"
-            :disabled="adoption.status === 'aprobada'"
+            :disabled="adoption.estado === 'aprobada'"
           >
             <i class="fas fa-edit"></i> Editar
           </button>
-          <button 
+          <button
             @click="deleteAdoption(adoption.id)"
             class="btn btn-danger btn-sm"
-            :disabled="adoption.status === 'aprobada'"
+            :disabled="adoption.estado === 'aprobada'"
           >
             <i class="fas fa-trash"></i> Eliminar
           </button>
@@ -127,16 +127,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { 
-  getAdoptions, 
-  deleteAdoption as removeAdoption, 
-  adoptionsStats 
+import {
+  loadAdoptions,
+  deleteAdoption as removeAdoption,
+  adoptionsStats,
+  adoptions
 } from '@/stores/adoptionsStore'
 
 // Reactive data
-const adoptions = ref([])
 const selectedStatus = ref('')
 const searchTerm = ref('')
+const isLoading = ref(false)
 
 // Computed properties
 const stats = computed(() => adoptionsStats.value)
@@ -146,41 +147,70 @@ const filteredAdoptions = computed(() => {
 
   // Filter by status
   if (selectedStatus.value) {
-    filtered = filtered.filter(adoption => adoption.status === selectedStatus.value)
+    filtered = filtered.filter(adoption => adoption.estado === selectedStatus.value)
   }
 
   // Filter by search term
   if (searchTerm.value) {
     const term = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(adoption => 
-      adoption.spaceName.toLowerCase().includes(term) ||
-      adoption.spaceLocation.toLowerCase().includes(term)
+    filtered = filtered.filter(adoption =>
+      adoption.nombre_espacio.toLowerCase().includes(term) ||
+      adoption.ubicacion_espacio.toLowerCase().includes(term)
     )
   }
 
-  return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 })
 
 // Methods
-function loadAdoptions() {
-  adoptions.value = getAdoptions()
+async function loadUserAdoptions() {
+  isLoading.value = true
+  try {
+    await loadAdoptions()
+  } catch (error) {
+    console.error('Error al cargar adopciones:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 
-function deleteAdoption(id) {
+async function deleteAdoption(id) {
   if (confirm('¿Estás seguro de que quieres eliminar esta adopción?')) {
-    removeAdoption(id)
-    loadAdoptions()
+    isLoading.value = true
+    try {
+      const result = await removeAdoption(id)
+      if (result.success) {
+        alert('Adopción eliminada exitosamente')
+      } else {
+        alert('Error: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error al eliminar adopción:', error)
+      alert('Error al eliminar la adopción')
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 
 function viewDetails(adoption) {
   // Implementar modal o página de detalles
-  alert(`Detalles de: ${adoption.spaceName}`)
+  const details = `
+    Espacio: ${adoption.nombre_espacio}
+    Ubicación: ${adoption.ubicacion_espacio}
+    Descripción: ${adoption.descripcion}
+    Actividades: ${adoption.actividades.join(', ')}
+    Frecuencia: ${getFrequencyText(adoption.frecuencia)}
+    Voluntarios: ${adoption.num_voluntarios}
+    Estado: ${getStatusText(adoption.estado)}
+    Creado: ${formatDate(adoption.created_at)}
+  `
+  alert(details)
 }
 
 function editAdoption(adoption) {
   // Implementar edición
-  alert(`Editar: ${adoption.spaceName}`)
+  alert(`Editar: ${adoption.nombre_espacio}`)
 }
 
 function formatDate(dateString) {
@@ -214,7 +244,7 @@ function getFrequencyText(frequency) {
 
 // Lifecycle
 onMounted(() => {
-  loadAdoptions()
+  loadUserAdoptions()
 })
 </script>
 
@@ -448,26 +478,26 @@ onMounted(() => {
   .adoptions-container {
     padding: 1rem;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .filters {
     flex-direction: column;
   }
-  
+
   .adoption-header {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .adoption-actions {
     justify-content: center;
   }

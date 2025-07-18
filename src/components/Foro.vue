@@ -181,6 +181,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'ForoComponent' })
 import { ref, computed } from 'vue'
 import MapSelector from './MapSelector.vue'
 
