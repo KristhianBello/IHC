@@ -1,8 +1,20 @@
 <template>
-  <div class="register-card">
-    <h1>Crear cuenta</h1>
+  <div>
+    <header class="header">
+      <img
+        src="@/assets/logo.png"
+        alt="Logo"
+        class="logo"
+      />
+    </header>
 
-    <form class="auth-form" @submit.prevent="handleRegister">
+    <main class="auth-container" id="main-content">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1>Registrarte</h1>
+        </div>
+
+        <form class="auth-form" @submit.prevent="handleRegister">
       <div class="form-group">
         <label for="nombre">Nombre completo</label>
         <input
@@ -68,10 +80,73 @@
         <router-link to="/" class="link">Inicia sesión</router-link>
       </div>
     </form>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
+/* Variables de color - tema verde */
+:root {
+  --primary-green: #2E8B57;
+  --hover-green: #3CB371;
+  --light-green: rgba(46, 139, 87, 0.2);
+  --error-red: #dc3545;
+  --error-light: rgba(220, 53, 69, 0.2);
+  --text-dark: #333;
+  --text-light: #666;
+  --border-light: #ddd;
+  --bg-gradient-start: #f5f7fa;
+  --bg-gradient-end: #c3cfe2;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logo {
+  height: 40px;
+  width: auto;
+  cursor: pointer;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Container principal */
+.auth-container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  padding: 2rem;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-header h1 {
+  text-align: center;
+  color: var(--primary-green);
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
 .register-card {
   max-width: 400px;
   margin: 2rem auto;
@@ -164,6 +239,21 @@
   width: 100%;
 }
 
+.btn-outline {
+  background-color: transparent;
+  color: var(--primary-green);
+  border: 2px solid var(--primary-green);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-outline:hover {
+  background-color: var(--primary-green);
+  color: white;
+}
+
 .login-redirect {
   text-align: center;
   margin-top: 1rem;
@@ -182,6 +272,24 @@
 
 /* Responsive */
 @media (max-width: 480px) {
+  .auth-container {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
+
+  .header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.5rem;
+  }
+
   .register-card {
     margin: 1rem;
     padding: 1.5rem;

@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
     <aside class="sidebar">
-      <img src="@/assets/logo.png" alt="Logo" class="logo" />
       <router-link to="/perfil" class="profile-link">
         👤 Mi perfil
       </router-link>
@@ -37,8 +36,8 @@
     <main class="main-content">
       <div class="forum-header">
         <h2>💬 Foro Vecinal</h2>
-        <button 
-          class="btn btn-new-post" 
+        <button
+          class="btn btn-new-post"
           @click="mostrarFormulario = !mostrarFormulario"
         >
           {{ mostrarFormulario ? '× Cancelar' : '+ Nueva publicación' }}
@@ -48,15 +47,15 @@
       <!-- Barra de búsqueda -->
       <div class="search-container">
         <div class="search-box">
-          <input 
-            type="text" 
-            v-model="busqueda" 
-            placeholder="🔍 Buscar publicaciones..." 
+          <input
+            type="text"
+            v-model="busqueda"
+            placeholder="🔍 Buscar publicaciones..."
             class="search-input"
           />
-          <button 
-            v-if="busqueda" 
-            @click="limpiarBusqueda" 
+          <button
+            v-if="busqueda"
+            @click="limpiarBusqueda"
             class="btn-clear-search"
             type="button"
           >
@@ -66,17 +65,17 @@
       </div>
 
       <!-- Formulario de nueva publicación -->
-      <form 
-        v-if="mostrarFormulario" 
-        @submit.prevent="agregarPublicacion" 
+      <form
+        v-if="mostrarFormulario"
+        @submit.prevent="agregarPublicacion"
         class="post-form"
       >
         <div class="form-group">
-          <input 
-            type="text" 
-            v-model="nueva.titulo" 
-            placeholder="Título de la publicación" 
-            required 
+          <input
+            type="text"
+            v-model="nueva.titulo"
+            placeholder="Título de la publicación"
+            required
           />
         </div>
         <div class="form-group">
@@ -88,12 +87,12 @@
           ></textarea>
         </div>
         <div class="form-group">
-          <input 
-            type="text" 
-            v-model="nueva.ubicacion" 
-            placeholder="Ubicación 📍" 
+          <input
+            type="text"
+            v-model="nueva.ubicacion"
+            placeholder="Ubicación 📍"
           />
-          <MapSelector 
+          <MapSelector
             v-model="nuevaUbicacion"
             @locationSelected="onLocationSelected"
           />
@@ -116,9 +115,9 @@
         </div>
 
         <!-- Publicaciones -->
-        <article 
-          v-for="(post, index) in publicacionesFiltradas" 
-          :key="index" 
+        <article
+          v-for="(post, index) in publicacionesFiltradas"
+          :key="index"
           class="post-card"
         >
           <div class="post-header">
@@ -130,16 +129,16 @@
               <span class="post-date">{{ post.fecha }}</span>
             </div>
           </div>
-          
+
           <div class="post-content">
             <h4>{{ post.titulo }}</h4>
             <p>{{ post.contenido }}</p>
-            
+
             <div class="post-location">
               📍 {{ post.ubicacion }}
             </div>
           </div>
-          
+
           <div class="post-actions">
             <button class="btn-like">
               ❤️ {{ post.likes }}
@@ -151,7 +150,7 @@
               ↗️ Compartir
             </button>
           </div>
-          
+
           <div class="post-comments">
             <div class="comment">
               <div class="comment-avatar">
@@ -162,11 +161,11 @@
                 <p>¡Excelente trabajo! Me encantaría unirme a la próxima jornada.</p>
               </div>
             </div>
-            
+
             <form class="comment-form">
-              <input 
-                type="text" 
-                placeholder="Escribe un comentario..." 
+              <input
+                type="text"
+                placeholder="Escribe un comentario..."
                 class="comment-input"
               />
               <button type="submit" class="btn-comment-submit">
@@ -216,9 +215,9 @@ const publicacionesFiltradas = computed(() => {
   if (!busqueda.value) {
     return publicaciones.value
   }
-  
+
   const termino = busqueda.value.toLowerCase()
-  return publicaciones.value.filter(post => 
+  return publicaciones.value.filter(post =>
     post.titulo.toLowerCase().includes(termino) ||
     post.contenido.toLowerCase().includes(termino) ||
     post.autor.toLowerCase().includes(termino) ||
@@ -239,7 +238,7 @@ function agregarPublicacion() {
       lng: nuevaUbicacion.value.lng
     }
   }
-  
+
   publicaciones.value.unshift(publicacionCompleta)
   nueva.value.titulo = ''
   nueva.value.contenido = ''
@@ -620,18 +619,18 @@ function limpiarBusqueda() {
   .app-container {
     flex-direction: column;
   }
-  
+
   .sidebar {
     width: 100%;
     height: auto;
     position: relative;
     padding: 1rem;
   }
-  
+
   .main-content {
     padding: 1rem;
   }
-  
+
   .forum-header {
     flex-direction: column;
     align-items: flex-start;

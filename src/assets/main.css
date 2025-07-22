@@ -42,9 +42,11 @@ button {
   background-color: var(--white);
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-
-.logo {
-  height: 50px;
+.sidebar {
+  width: 250px;
+  background-color: var(--white);
+  padding: 1rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .auth-buttons {

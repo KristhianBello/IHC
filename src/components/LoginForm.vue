@@ -3,12 +3,9 @@
     <header class="header">
       <img
         src="@/assets/logo.png"
-        alt="Logo"  
+        alt="Logo"
         class="logo"
       />
-      <div class="auth-buttons">
-        <router-link to="/registro" class="btn btn-outline">Registrarte</router-link>
-      </div>
     </header>
 
     <main class="auth-container" id="main-content">
@@ -66,6 +63,11 @@
             <router-link to="/forgot-password" class="forgot-password">
               ¿Olvidaste la contraseña?
             </router-link>
+          </div>
+          
+          <div class="login-redirect">
+            ¿Aún no tienes una cuenta?
+            <router-link to="/registro" class="link">Registrarse</router-link>
           </div>
         </form>
       </div>
