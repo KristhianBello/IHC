@@ -1,7 +1,11 @@
 <template>
   <div>
     <header class="header">
-      <!-- ##logo pendiente## -->
+      <img
+        src="@/assets/logo.png"
+        alt="Logo"  
+        class="logo"
+      />
       <div class="auth-buttons">
         <router-link to="/registro" class="btn btn-outline">Registrarte</router-link>
       </div>
@@ -187,6 +191,12 @@ async function handleLogin() {
   padding: 1rem 2rem;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logo {
+  height: 40px;
+  width: auto;
+  cursor: pointer;
 }
 
 .auth-buttons {
