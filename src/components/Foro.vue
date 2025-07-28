@@ -30,6 +30,16 @@
             🌲 Solicitar adopción
           </router-link>
         </li>
+        <li>
+          <router-link to="/reportar" class="nav-link" active-class="active">
+            🚨 Reportar problema
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/programar-tareas" class="nav-link" active-class="active">
+            📅 Programar tareas
+          </router-link>
+        </li>
       </ul>
     </aside>
 
