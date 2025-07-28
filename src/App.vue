@@ -7,10 +7,6 @@
 </script>
 
 <style>
-/* Importar estilos globales */
-@import './assets/main.css';
-@import './assets/base.css';
-
 /* Estilos básicos de la aplicación */
 #app {
   margin: 0;
