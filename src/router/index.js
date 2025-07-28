@@ -4,6 +4,9 @@ import SolicitudAdopcion from '@/components/Solicitud.vue'
 import Foro from '@/components/Foro.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import AdoptionsView from '@/views/AdoptionsView.vue'
+import ReportView from '@/views/ReportView.vue'
+import TaskScheduleView from '@/views/TaskScheduleView.vue'
+import UserProfileView from '@/views/UserProfileView.vue'
 
 
 const routes = [
@@ -31,6 +34,21 @@ const routes = [
     path: '/registro',
     name: 'registro',
     component: RegisterView,
+  },
+  {
+    path: '/reportar',
+    name: 'reportar',
+    component: ReportView,
+  },
+  {
+    path: '/programar-tareas',
+    name: 'programar-tareas',
+    component: TaskScheduleView,
+  },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: UserProfileView,
   },
 ]
 
