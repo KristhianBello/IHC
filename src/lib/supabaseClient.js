@@ -123,21 +123,21 @@ export const addPost = async (postData) => {
         created_at: new Date().toISOString()
       }])
       .select()
-    
+
     if (error) throw error
     return { data: data[0], error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando agregar post:', postData)
-    return { 
-      data: { 
-        id: Date.now(), 
-        ...postData, 
+    return {
+      data: {
+        id: Date.now(),
+        ...postData,
         likes_count: 0,
         comments_count: 0,
         created_at: new Date().toISOString(),
         autor: postData.autor || 'Usuario Actual'
-      }, 
-      error: null 
+      },
+      error: null
     }
   }
 }
@@ -153,10 +153,10 @@ export const getPosts = async () => {
         comments:post_comments (count)
       `)
       .order('created_at', { ascending: false })
-    
+
     if (error) throw error
     return { data, error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando obtener posts')
     return {
       data: [
@@ -184,10 +184,10 @@ export const deletePost = async (postId) => {
       .from('posts')
       .delete()
       .eq('id', postId)
-    
+
     if (error) throw error
     return { error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando eliminar post:', postId)
     return { error: null }
   }
@@ -211,7 +211,7 @@ export const toggleLike = async (postId, userId) => {
         .delete()
         .eq('post_id', postId)
         .eq('user_id', userId)
-      
+
       if (error) throw error
       return { data: { liked: false }, error: null }
     } else {
@@ -219,11 +219,11 @@ export const toggleLike = async (postId, userId) => {
       const { error } = await supabase
         .from('post_likes')
         .insert([{ post_id: postId, user_id: userId }])
-      
+
       if (error) throw error
       return { data: { liked: true }, error: null }
     }
-  } catch (error) {
+  } catch {
     console.log('Simulando toggle like:', postId, userId)
     return { data: { liked: Math.random() > 0.5 }, error: null }
   }
@@ -235,10 +235,10 @@ export const getPostLikes = async (postId) => {
       .from('post_likes')
       .select('user_id, profiles:user_id(username)')
       .eq('post_id', postId)
-    
+
     if (error) throw error
     return { data, error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando obtener likes del post:', postId)
     return { data: [], error: null }
   }
@@ -259,19 +259,19 @@ export const addComment = async (commentData) => {
         *,
         profiles:user_id (username, avatar_url)
       `)
-    
+
     if (error) throw error
     return { data: data[0], error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando agregar comentario:', commentData)
-    return { 
-      data: { 
-        id: Date.now(), 
-        ...commentData, 
+    return {
+      data: {
+        id: Date.now(),
+        ...commentData,
         autor: 'Usuario Actual',
         created_at: new Date().toISOString()
-      }, 
-      error: null 
+      },
+      error: null
     }
   }
 }
@@ -286,10 +286,10 @@ export const getPostComments = async (postId) => {
       `)
       .eq('post_id', postId)
       .order('created_at', { ascending: true })
-    
+
     if (error) throw error
     return { data, error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando obtener comentarios del post:', postId)
     return {
       data: [
@@ -318,10 +318,10 @@ export const addCompanion = async (companionId) => {
         status: 'pending'
       }])
       .select()
-    
+
     if (error) throw error
     return { data: data[0], error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando agregar compañero:', companionId)
     return { data: { id: Date.now(), companion_id: companionId, status: 'pending' }, error: null }
   }
@@ -337,10 +337,10 @@ export const getCompanions = async (userId = 'user_simulado') => {
       `)
       .eq('user_id', userId)
       .eq('status', 'accepted')
-    
+
     if (error) throw error
     return { data, error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando obtener compañeros')
     return {
       data: [
@@ -376,10 +376,10 @@ export const sharePostWithCompanions = async (postId, companionIds, message = ''
       .from('post_shares')
       .insert(shares)
       .select()
-    
+
     if (error) throw error
     return { data, error: null }
-  } catch (error) {
+  } catch {
     console.log('Simulando compartir post:', postId, 'con compañeros:', companionIds)
     return { data: companionIds.map(id => ({ shared_with: id })), error: null }
   }
@@ -418,7 +418,7 @@ export const subscribeToPostUpdates = (callback) => {
       .subscribe()
 
     return subscription
-  } catch (error) {
+  } catch {
     console.log('WebSocket no disponible, usando simulación')
     // Simular actualizaciones cada 30 segundos
     const interval = setInterval(() => {

@@ -155,20 +155,20 @@
           </div>
 
           <div class="post-actions">
-            <button 
+            <button
               class="btn-like"
               :class="{ 'liked': post.liked }"
               @click="manejarLike(post.id, index)"
             >
               <i class="fas fa-heart"></i> {{ post.likes_count || 0 }}
             </button>
-            <button 
+            <button
               class="btn-comment"
               @click="toggleComentarios(post.id, index)"
             >
               <i class="fas fa-comment"></i> {{ comentariosVisibles[post.id] ? 'Ocultar' : 'Comentarios' }} ({{ post.comments_count || 0 }})
             </button>
-            <button 
+            <button
               class="btn-share"
               @click="toggleCompartir(post.id)"
             >
@@ -180,13 +180,13 @@
           <div v-if="compartirVisible[post.id]" class="share-panel">
             <h4><i class="fas fa-users"></i> Compartir con compañeros</h4>
             <div class="companions-list">
-              <div 
-                v-for="companion in compañeros" 
-                :key="companion.id" 
+              <div
+                v-for="companion in compañeros"
+                :key="companion.id"
                 class="companion-item"
               >
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   :id="`companion-${companion.companion_id}`"
                   class="companion-checkbox"
                 />
@@ -196,8 +196,8 @@
               </div>
             </div>
             <div class="share-message">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 v-model="mensajeCompartir[post.id]"
                 placeholder="Mensaje opcional..."
                 class="share-input"
@@ -216,9 +216,9 @@
           <!-- Comentarios -->
           <div v-if="comentariosVisibles[post.id]" class="post-comments">
             <div class="comments-list">
-              <div 
-                v-for="comentario in post.comentarios" 
-                :key="comentario.id" 
+              <div
+                v-for="comentario in post.comentarios"
+                :key="comentario.id"
                 class="comment"
               >
                 <div class="comment-avatar">
@@ -255,15 +255,15 @@
 defineOptions({ name: 'ForoComponent' })
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import MapSelector from './MapSelector.vue'
-import { 
-  addPost, 
-  getPosts, 
-  toggleLike, 
-  addComment, 
+import {
+  addPost,
+  getPosts,
+  toggleLike,
+  addComment,
   getPostComments,
   getCompanions,
   sharePostWithCompanions,
-  subscribeToPostUpdates 
+  subscribeToPostUpdates
 } from '../lib/supabaseClient.js'
 
 const mostrarFormulario = ref(false)
@@ -345,7 +345,7 @@ function configurarWebSocket() {
         comentarios: []
       }
       publicaciones.value.unshift(nuevaPublicacion)
-      
+
       // Mostrar notificación
       mostrarNotificacion('Nueva publicación disponible')
     }
@@ -368,16 +368,16 @@ async function agregarPublicacion() {
   }
 
   const { data, error } = await addPost(publicacionData)
-  
+
   if (!error && data) {
     const publicacionCompleta = {
       ...data,
       fecha: formatearFecha(data.created_at),
       comentarios: []
     }
-    
+
     publicaciones.value.unshift(publicacionCompleta)
-    
+
     // Limpiar formulario
     nueva.value.titulo = ''
     nueva.value.contenido = ''
@@ -385,7 +385,7 @@ async function agregarPublicacion() {
     nueva.value.coordenadas = null
     nuevaUbicacion.value = null
     mostrarFormulario.value = false
-    
+
     mostrarNotificacion('Publicación creada exitosamente')
   } else {
     mostrarNotificacion('Error al crear la publicación', 'error')
@@ -394,7 +394,7 @@ async function agregarPublicacion() {
 
 async function manejarLike(postId, index) {
   const { data, error } = await toggleLike(postId, currentUserId.value)
-  
+
   if (!error && data) {
     const post = publicaciones.value[index]
     if (data.liked) {
@@ -408,7 +408,7 @@ async function manejarLike(postId, index) {
 
 async function toggleComentarios(postId, index) {
   comentariosVisibles.value[postId] = !comentariosVisibles.value[postId]
-  
+
   if (comentariosVisibles.value[postId] && !publicaciones.value[index].comentarios.length) {
     const { data, error } = await getPostComments(postId)
     if (!error && data) {
@@ -428,13 +428,13 @@ async function agregarComentario(postId, index) {
   }
 
   const { data, error } = await addComment(comentarioData)
-  
+
   if (!error && data) {
     publicaciones.value[index].comentarios.push(data)
     publicaciones.value[index].comments_count = (publicaciones.value[index].comments_count || 0) + 1
     nuevoComentario.value[postId] = ''
-    
-    mostrarNotificación('Comentario agregado')
+
+    mostrarNotificacion('Comentario agregado')
   }
 }
 
@@ -443,29 +443,29 @@ function toggleCompartir(postId) {
 }
 
 async function compartirPost(postId) {
-  const companionIds = Object.keys(compañeros.value).filter(id => 
+  const companionIds = Object.keys(compañeros.value).filter(id =>
     document.querySelector(`#companion-${id}`).checked
   )
-  
+
   if (companionIds.length === 0) {
     mostrarNotificacion('Selecciona al menos un compañero', 'warning')
     return
   }
 
   const mensaje = mensajeCompartir.value[postId] || ''
-  const { data, error } = await sharePostWithCompanions(postId, companionIds, mensaje)
-  
+  const { error } = await sharePostWithCompanions(postId, companionIds, mensaje)
+
   if (!error) {
     compartirVisible.value[postId] = false
     mensajeCompartir.value[postId] = ''
-    
+
     // Desmarcar checkboxes
     companionIds.forEach(id => {
       const checkbox = document.querySelector(`#companion-${id}`)
       if (checkbox) checkbox.checked = false
     })
-    
-    mostrarNotificación(`Post compartido con ${companionIds.length} compañero(s)`)
+
+    mostrarNotificacion(`Post compartido con ${companionIds.length} compañero(s)`)
   }
 }
 
@@ -477,11 +477,11 @@ function formatearFecha(fecha) {
   const ahora = new Date()
   const fechaPost = new Date(fecha)
   const diferencia = ahora - fechaPost
-  
+
   const minutos = Math.floor(diferencia / (1000 * 60))
   const horas = Math.floor(diferencia / (1000 * 60 * 60))
   const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24))
-  
+
   if (minutos < 60) {
     return `Hace ${minutos} minuto${minutos !== 1 ? 's' : ''}`
   } else if (horas < 24) {
@@ -508,9 +508,9 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: slideIn 0.3s ease;
   `
-  
+
   document.body.appendChild(notificacion)
-  
+
   setTimeout(() => {
     notificacion.remove()
   }, 3000)

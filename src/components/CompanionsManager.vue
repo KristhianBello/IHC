@@ -10,18 +10,18 @@
     <!-- Formulario para agregar compañero -->
     <div v-if="mostrarAgregarForm" class="add-companion-form">
       <div class="form-group">
-        <input 
-          type="text" 
+        <input
+          type="text"
           v-model="buscarUsuario"
           placeholder="Buscar usuario por nombre o email..."
           class="search-input"
           @input="buscarUsuarios"
         />
       </div>
-      
+
       <div v-if="usuariosEncontrados.length > 0" class="search-results">
-        <div 
-          v-for="usuario in usuariosEncontrados" 
+        <div
+          v-for="usuario in usuariosEncontrados"
           :key="usuario.id"
           class="user-result"
           @click="enviarSolicitudAmistad(usuario)"
@@ -42,8 +42,8 @@
 
     <!-- Lista de compañeros -->
     <div class="companions-list">
-      <div 
-        v-for="companion in compañeros" 
+      <div
+        v-for="companion in compañeros"
         :key="companion.id"
         class="companion-card"
       >
@@ -57,14 +57,14 @@
           </span>
         </div>
         <div class="companion-actions">
-          <button 
-            v-if="companion.status === 'pending'" 
+          <button
+            v-if="companion.status === 'pending'"
             @click="aceptarSolicitud(companion.id)"
             class="btn btn-small btn-success"
           >
             <i class="fas fa-check"></i> Aceptar
           </button>
-          <button 
+          <button
             @click="eliminarCompanion(companion.id)"
             class="btn btn-small btn-danger"
           >
@@ -116,11 +116,11 @@ function buscarUsuarios() {
         email: 'ana.garcia@email.com'
       },
       {
-        id: 'user_search_2', 
+        id: 'user_search_2',
         username: 'Luis Morales',
         email: 'luis.morales@email.com'
       }
-    ].filter(user => 
+    ].filter(user =>
       user.username.toLowerCase().includes(buscarUsuario.value.toLowerCase()) ||
       user.email.toLowerCase().includes(buscarUsuario.value.toLowerCase())
     )
@@ -131,13 +131,13 @@ function buscarUsuarios() {
 
 async function enviarSolicitudAmistad(usuario) {
   const { data, error } = await addCompanion(usuario.id)
-  
+
   if (!error) {
     mostrarNotificacion(`Solicitud enviada a ${usuario.username}`)
     buscarUsuario.value = ''
     usuariosEncontrados.value = []
     mostrarAgregarForm.value = false
-    
+
     // Agregar a la lista como pendiente
     compañeros.value.push({
       id: data.id,
@@ -189,9 +189,9 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: slideIn 0.3s ease;
   `
-  
+
   document.body.appendChild(notificacion)
-  
+
   setTimeout(() => {
     notificacion.remove()
   }, 3000)
