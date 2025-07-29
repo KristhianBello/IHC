@@ -10,6 +10,7 @@ import UserProfileView from '@/views/UserProfileView.vue'
 import CompanionsView from '@/views/CompanionsView.vue'
 import GalleryView from '@/views/GalleryView.vue'
 import MapView from '@/views/MapView.vue'
+import SuggestionForm from '@/components/SuggestionForm.vue'
 
 
 const routes = [
@@ -67,6 +68,11 @@ const routes = [
     path: '/mapa',
     name: 'mapa',
     component: MapView,
+  },
+  {
+    path: '/sugerencias',
+    name: 'sugerencias',
+    component: SuggestionForm,
   },
 ]
 

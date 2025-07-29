@@ -26,8 +26,15 @@
             <i class="fas fa-hand-holding-heart"></i> Solicitar adopción
           </RouterLink>
         </li>
+        <li>
+          <RouterLink to="/sugerencias" class="nav-link" active-class="active">
+            <i class="fas fa-lightbulb"></i> Sugerencias
+          </RouterLink>
+        </li>
+
       </ul>
     </aside>
+    
 
     <main class="main-content">
       <div class="forum-header">

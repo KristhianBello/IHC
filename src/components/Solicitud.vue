@@ -82,6 +82,10 @@
               <label><input type="checkbox" value="repairs" v-model="formData.activities" /> Reparaciones</label>
               <label><input type="checkbox" value="other" v-model="formData.activities" /> Otra</label>
             </div>
+            <div v-if="formData.activities.includes('other')" class="other-activity-panel">
+              <label for="otherActivity">Especifica otra actividad:</label>
+              <input type="text" id="otherActivity" v-model="formData.otherActivity" placeholder="Describe la actividad..." />
+            </div>
           </div>
 
           <div class="form-group">
@@ -156,6 +160,7 @@ const formData = ref({
   spaceName: '',
   spaceLocation: '',
   activities: [],
+  otherActivity: '',
   frequency: '',
   volunteers: '',
   description: ''
@@ -213,6 +218,7 @@ function resetForm() {
     spaceName: '',
     spaceLocation: '',
     activities: [],
+    otherActivity: '',
     frequency: '',
     volunteers: '',
     description: ''
@@ -222,6 +228,14 @@ function resetForm() {
 </script>
 
 <style scoped>
+/* Panel para especificar otra actividad */
+.other-activity-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--light-bg);
+  border-radius: 8px;
+  border: 1px solid var(--gray-border);
+}
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
 /* Variables de color */
