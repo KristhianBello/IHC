@@ -321,7 +321,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@/composables/useI18n.js'
-import { registerUser } from '@/stores/authStore'
+import { signUp } from '@/lib/supabaseClient.js'
 
 const router = useRouter()
 const { t, changeLanguage, currentLanguage } = useI18n()
@@ -381,29 +381,35 @@ async function handleRegister() {
   isSubmitting.value = true
 
   try {
-    const result = await registerUser({
-      nombre: formData.value.nombre.trim(),
+    const { data, error } = await signUp({
       email: formData.value.email.trim().toLowerCase(),
-      password: formData.value.password
+      password: formData.value.password,
+      userData: {
+        nombre: formData.value.nombre.trim()
+      }
     })
 
-    if (result.success) {
-      alert(t('registerSuccess') + ' ' + result.message)
+    if (error) {
+      if (error.message.includes('ya existe')) {
+        errors.value.email = t('emailAlreadyRegistered')
+      } else {
+        alert(t('registerError') + ': ' + error.message)
+      }
+      return
+    }
+
+    if (data?.user) {
+      alert(t('registerSuccess'))
       formData.value = {
         nombre: '',
         email: '',
         password: '',
         confirmPassword: ''
       }
-      router.push('/')
+      // Redirigir al foro después del registro exitoso
+      router.push('/foro')
     } else {
-      if (result.error.includes('already registered')) {
-        errors.value.email = t('emailAlreadyRegistered')
-      } else if (result.error.includes('Password')) {
-        errors.value.password = t('passwordRequirements')
-      } else {
-        alert(t('registerError') + ': ' + result.error)
-      }
+      alert(t('registerError'))
     }
   } catch (error) {
     console.error('Error inesperado:', error)

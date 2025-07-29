@@ -15,6 +15,89 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 })
 
+// ==================== SISTEMA DE AUTENTICACIÓN REAL ====================
+// Base de datos simulada de usuarios registrados
+const registeredUsers = new Map([
+  ['toroj1483@gmail.com', { id: 'user_real_1', email: 'toroj1483@gmail.com', password: 'hola123', username: 'Jesus Montes', isRealUser: true }],
+  ['ana@ejemplo.com', { id: 'user_test_1', email: 'ana@ejemplo.com', password: '123456', username: 'Ana López', isRealUser: false }],
+  ['carlos@ejemplo.com', { id: 'user_test_2', email: 'carlos@ejemplo.com', password: '123456', username: 'Carlos García', isRealUser: false }]
+])
+
+// Usuario actualmente logueado
+let currentLoggedUser = null
+
+// Función de registro real
+export const signUp = async ({ email, password, userData }) => {
+  console.log('Simulando registro:', { nombre: userData?.nombre, email, password })
+  
+  // Verificar si el usuario ya existe
+  if (registeredUsers.has(email)) {
+    return {
+      data: null,
+      error: { message: 'El usuario ya existe' }
+    }
+  }
+  
+  // Crear nuevo usuario
+  const newUser = {
+    id: `user_real_${Date.now()}`,
+    email,
+    password,
+    username: userData?.nombre || 'Usuario',
+    isRealUser: true
+  }
+  
+  registeredUsers.set(email, newUser)
+  currentLoggedUser = newUser
+  
+  // Guardar en localStorage para persistencia
+  localStorage.setItem('currentUser', JSON.stringify(newUser))
+  localStorage.setItem('isRealUser', 'true')
+  
+  return {
+    data: { user: newUser },
+    error: null
+  }
+}
+
+// Función de login real
+export const signInWithPassword = async ({ email, password }) => {
+  console.log('Simulando login:', email, password)
+  
+  const user = registeredUsers.get(email)
+  
+  if (!user || user.password !== password) {
+    return {
+      data: null,
+      error: { message: 'Credenciales incorrectas' }
+    }
+  }
+  
+  currentLoggedUser = user
+  
+  // Guardar en localStorage para persistencia
+  localStorage.setItem('currentUser', JSON.stringify(user))
+  localStorage.setItem('isRealUser', user.isRealUser ? 'true' : 'false')
+  
+  return {
+    data: { user },
+    error: null
+  }
+}
+
+// Funciones de puente para compatibilidad
+export const simulateRegister = async (userData) => {
+  return await signUp({
+    email: userData.email,
+    password: userData.password,
+    userData: { nombre: userData.nombre }
+  })
+}
+
+export const simulateLogin = async (email, password) => {
+  return await signInWithPassword({ email, password })
+}
+
 // Funciones temporales para simular la funcionalidad sin base de datos real
 export const addAdoption = async (adoptionData) => {
   console.log('Simulando guardado de adopción:', adoptionData)
@@ -141,37 +224,54 @@ let postsDatabase = [
   }
 ]
 
-// Simulación de createPost
+// Simulación de createPost - corregida para usuarios reales
 export const createPost = async (postData) => {
   console.log('Simulando createPost:', postData)
 
-  const newPost = {
-    id: Date.now(),
-    title: postData.titulo,      // Mapear titulo a title
-    content: postData.contenido, // Mapear contenido a content
-    location: postData.ubicacion, // Mapear ubicacion a location
-    likes_count: 0,
-    comments_count: 0,
-    created_at: new Date().toISOString(),
-    author_id: 'user_simulado',
-    autor: 'Usuario Actual',
-    profiles: {
-      username: 'Usuario Actual',
-      avatar_url: null
+  try {
+    // Obtener usuario actual
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        data: null,
+        error: { message: 'Usuario no autenticado' }
+      }
     }
-  }
 
-  // Agregar al "almacén" de publicaciones
-  postsDatabase.unshift(newPost) // Agregar al inicio para mostrar las más recientes primero
+    const newPost = {
+      id: Date.now(),
+      title: postData.titulo,      // Mapear titulo a title
+      content: postData.contenido, // Mapear contenido a content
+      location: postData.ubicacion, // Mapear ubicacion a location
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      author_id: currentUser.id,
+      autor: currentUser.username,
+      profiles: {
+        username: currentUser.username,
+        avatar_url: null
+      }
+    }
 
-  // Simular notificación WebSocket
-  if (window.WebSocketSimulation) {
-    window.WebSocketSimulation.emit('post_created', newPost)
-  }
+    // Agregar al "almacén" de publicaciones
+    postsDatabase.unshift(newPost) // Agregar al inicio para mostrar las más recientes primero
 
-  return {
-    data: newPost,
-    error: null
+    // Simular notificación WebSocket
+    if (window.WebSocketSimulation) {
+      window.WebSocketSimulation.emit('post_created', newPost)
+    }
+
+    return {
+      data: newPost,
+      error: null
+    }
+  } catch (error) {
+    console.error('Error creando publicación:', error)
+    return {
+      data: null,
+      error: { message: 'Error creando publicación' }
+    }
   }
 }// Simulación de updatePost
 export const updatePostAPI = async (postId, postData) => {
@@ -219,30 +319,63 @@ export const updatePostAPI = async (postId, postData) => {
 // Alias para compatibilidad con Foro.vue
 export const updatePost = updatePostAPI;
 
-// Simulación de getCurrentUser
+// Simulación de getCurrentUser - mejorada para usuarios reales
 export const getCurrentUser = async () => {
-  return { id: 'user_simulado', username: 'Usuario Actual' }
-}
-
-// Simulación de getProfile
-export const getProfile = async (userId = 'user_simulado') => {
-  return {
-    data: {
-      id: userId,
-      username: 'Usuario Actual',
-      avatar_url: '',
-      bio: 'Miembro activo',
-      theme: 'light',
-      language: 'es',
-      updated_at: new Date().toISOString()
-    },
-    error: null
+  try {
+    // Intentar obtener usuario del localStorage
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      const user = JSON.parse(savedUser)
+      currentLoggedUser = user
+      return user
+    }
+    return null
+  } catch (error) {
+    console.error('Error obteniendo usuario actual:', error)
+    return null
   }
 }
 
-// Simulación de signOut
+// Simulación de getProfile - mejorada para usuarios reales
+export const getProfile = async (userId = null) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        data: null,
+        error: { message: 'No hay usuario logueado' }
+      }
+    }
+    
+    return {
+      data: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        avatar_url: '',
+        bio: 'Miembro activo',
+        theme: 'light',
+        language: 'es',
+        isRealUser: currentUser.isRealUser || false,
+        updated_at: new Date().toISOString()
+      },
+      error: null
+    }
+  } catch (error) {
+    console.error('Error obteniendo perfil:', error)
+    return {
+      data: null,
+      error: { message: 'Error obteniendo perfil' }
+    }
+  }
+}
+
+// Simulación de signOut - mejorada
 export const signOut = async () => {
-  console.log('Simulando signOut')
+  console.log('Cerrando sesión')
+  currentLoggedUser = null
+  localStorage.removeItem('currentUser')
+  localStorage.removeItem('isRealUser')
   return { error: null }
 }
 
@@ -342,6 +475,52 @@ export const getPostLikes = async (postId) => {
 const commentsStorage = new Map() // Simulación de comentarios
 const webSocketSubscribers = new Set() // Lista de suscriptores
 
+// Inicializar comentarios de ejemplo
+commentsStorage.set(1, [
+  {
+    id: 1001,
+    post_id: 1,
+    content: "¡Excelente iniciativa! ¿Cómo puedo participar?",
+    user_id: 'user_test_1',
+    parent_id: null,
+    autor: 'Ana López',
+    profiles: {
+      username: 'Ana López',
+      avatar_url: null
+    },
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 1002,
+    post_id: 1,
+    content: "Muy buena idea, cuenta conmigo",
+    user_id: 'user_test_2',
+    parent_id: null,
+    autor: 'Carlos García',
+    profiles: {
+      username: 'Carlos García',
+      avatar_url: null
+    },
+    created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+  }
+])
+
+commentsStorage.set(2, [
+  {
+    id: 2001,
+    post_id: 2,
+    content: "¿A qué hora empezamos?",
+    user_id: 'user_test_1',
+    parent_id: null,
+    autor: 'Ana López',
+    profiles: {
+      username: 'Ana López',
+      avatar_url: null
+    },
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+  }
+])
+
 // Función para notificar cambios a suscriptores
 const notifyWebSocketSubscribers = (payload) => {
   webSocketSubscribers.forEach(callback => {
@@ -356,29 +535,50 @@ const notifyWebSocketSubscribers = (payload) => {
 export const addComment = async (commentData) => {
   console.log('Agregando comentario:', commentData)
 
-  const newComment = {
-    id: Date.now(),
-    post_id: commentData.post_id,
-    content: commentData.content,
-    user_id: commentData.user_id || 'user_simulado',
-    parent_id: commentData.parent_id || null,
-    autor: 'Usuario Actual',
-    created_at: new Date().toISOString()
+  try {
+    // Obtener usuario actual
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        data: null,
+        error: { message: 'Usuario no autenticado' }
+      }
+    }
+
+    const newComment = {
+      id: Date.now(),
+      post_id: commentData.post_id,
+      content: commentData.content,
+      user_id: currentUser.id,
+      parent_id: commentData.parent_id || null,
+      autor: currentUser.username,
+      profiles: {
+        username: currentUser.username,
+        avatar_url: null
+      },
+      created_at: new Date().toISOString()
+    }
+
+    // Almacenar en simulación
+    const postComments = commentsStorage.get(commentData.post_id) || []
+    postComments.push(newComment)
+    commentsStorage.set(commentData.post_id, postComments)
+
+    // Notificar a los suscriptores de WebSocket
+    notifyWebSocketSubscribers({
+      eventType: 'INSERT',
+      table: 'post_comments',
+      new: newComment
+    })
+
+    return { data: newComment, error: null }
+  } catch (error) {
+    console.error('Error agregando comentario:', error)
+    return {
+      data: null,
+      error: { message: 'Error agregando comentario' }
+    }
   }
-
-  // Almacenar en simulación
-  const postComments = commentsStorage.get(commentData.post_id) || []
-  postComments.push(newComment)
-  commentsStorage.set(commentData.post_id, postComments)
-
-  // Notificar a los suscriptores de WebSocket
-  notifyWebSocketSubscribers({
-    eventType: 'INSERT',
-    table: 'post_comments',
-    new: newComment
-  })
-
-  return { data: newComment, error: null }
 }
 
 export const getPostComments = async (postId) => {
@@ -388,10 +588,31 @@ export const getPostComments = async (postId) => {
   return { data: comments, error: null }
 }
 
-// Función única compatible con Foro.vue
+// Función única compatible con Foro.vue - corregida
 export const createComment = async (postId, content, parentId = null) => {
-  // Simulación: el usuario es 'user_simulado'
-  return await addComment({ post_id: postId, content, user_id: 'user_simulado', parent_id: parentId })
+  try {
+    // Obtener usuario actual
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return {
+        data: null,
+        error: { message: 'Usuario no autenticado' }
+      }
+    }
+
+    return await addComment({ 
+      post_id: postId, 
+      content, 
+      user_id: currentUser.id, 
+      parent_id: parentId 
+    })
+  } catch (error) {
+    console.error('Error creando comentario:', error)
+    return {
+      data: null,
+      error: { message: 'Error creando comentario' }
+    }
+  }
 }
 
 // ==================== FUNCIONES DE COMPAÑEROS ====================

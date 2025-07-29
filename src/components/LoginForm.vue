@@ -47,6 +47,11 @@
           <a href="#" class="forgot-password">{{ t('forgotPassword') }}</a>
         </div>
 
+        <div v-if="errorMessage" class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ errorMessage }}
+        </div>
+
         <button type="submit" class="btn-login" :disabled="isLoading">
           <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
           <i v-else class="fas fa-sign-in-alt"></i>
@@ -81,6 +86,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@/composables/useI18n.js'
+import { signInWithPassword } from '@/lib/supabaseClient.js'
 
 const router = useRouter()
 const { t, changeLanguage, currentLanguage } = useI18n()
@@ -92,27 +98,38 @@ const loginData = ref({
 
 const rememberMe = ref(false)
 const isLoading = ref(false)
+const errorMessage = ref('')
 
 const handleLogin = async () => {
   if (!loginData.value.email || !loginData.value.password) {
-    alert(t('fillAllFields'))
+    errorMessage.value = t('fillAllFields')
     return
   }
 
   isLoading.value = true
+  errorMessage.value = ''
 
   try {
-    // Simular proceso de login
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const { data, error } = await signInWithPassword({
+      email: loginData.value.email,
+      password: loginData.value.password
+    })
 
-    // Simular login exitoso
-    console.log('Login exitoso:', loginData.value)
+    if (error) {
+      errorMessage.value = error.message || t('loginError')
+      return
+    }
 
-    // Redirigir al foro
-    router.push('/foro')
+    if (data?.user) {
+      console.log('Login exitoso:', data.user)
+      // Redirigir al foro después del login exitoso
+      router.push('/foro')
+    } else {
+      errorMessage.value = t('loginError')
+    }
   } catch (error) {
     console.error('Error en login:', error)
-    alert(t('loginError'))
+    errorMessage.value = t('loginError')
   } finally {
     isLoading.value = false
   }
@@ -219,6 +236,23 @@ const handleLogin = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  border: 1px solid #f5c6cb;
+}
+
+.error-message i {
+  font-size: 1rem;
 }
 
 .checkbox-label {
