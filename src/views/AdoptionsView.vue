@@ -1,8 +1,31 @@
 <template>
   <div class="adoptions-container">
-    <div class="header">
+    <!-- Header principal similar a Foro.vue -->
+    <header class="main-header">
+      <div class="header-container">
+        <div class="header-left">
+          <RouterLink to="/foro">
+            <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
+          </RouterLink>
+        </div>
+        <div class="header-center">
+          <div class="language-selector">
+            <button @click="toggleLanguage" class="btn-language btn-with-icon">
+              <i class="fas fa-globe"></i>
+              {{ currentLanguage === 'es' ? 'ES' : 'EN' }}
+            </button>
+          </div>
+        </div>
+        <div class="header-right">
+          <RouterLink to="/foro" class="btn btn-outline" style="margin-right: 12px;">
+            <i class="fas fa-arrow-left"></i> Volver al Foro
+          </RouterLink>
+        </div>
+      </div>
+    </header>
+    <div class="header" style="margin-top: 24px;">
       <h2><i class="fas fa-seedling"></i> Mis Adopciones</h2>
-      <RouterLink to="/solicitud" class="btn btn-primary">
+      <RouterLink to="/solicitud" class="btn btn-primary" style="margin-left: 24px;">
         <i class="fas fa-plus"></i> Nueva Adopción
       </RouterLink>
     </div>
@@ -127,6 +150,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from '@/composables/useI18n.js'
+
+const { t, currentLanguage, toggleLanguage } = useI18n()
 import {
   loadAdoptions,
   deleteAdoption as removeAdoption,
@@ -249,6 +275,70 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.main-header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0.5rem 0 0.5rem;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #2E8B57;
+  margin: 0 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+}
+.header-logo {
+  height: 72px;
+  width: auto;
+  margin-right: 20px;
+  margin-left: -16px;
+}
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+.language-selector .btn-language {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.language-selector .btn-language:hover {
+  background: #d1fae5;
+  color: #059669;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+}
 .adoptions-container {
   max-width: 1200px;
   margin: 0 auto;

@@ -5,7 +5,6 @@
       <div class="header-container">
         <div class="header-left">
           <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
-          <h1 class="header-title">EcoVecinos</h1>
         </div>
 
         <div class="header-center">
@@ -1027,7 +1026,7 @@ onUnmounted(() => {
 .header-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 0.5rem 0 0.5rem;
   height: 64px;
   display: flex;
   align-items: center;
@@ -1038,12 +1037,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  justify-content: flex-start;
+  flex: 0 0 auto;
 }
 
+
 .header-logo {
-  height: 40px;
+  height: 56px;
   width: auto;
+  margin-right: 12px;
 }
+
 
 .header-title {
   font-size: 1.5rem;
