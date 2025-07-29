@@ -324,7 +324,7 @@ export const getPostLikes = async (postId) => {
 // Función única compatible con Foro.vue
 export const createComment = async (postId, content, parentId = null) => {
   // Simulación: el usuario es 'user_simulado'
-  return await addComment({ post_id: postId, content, user_id: 'user_simulado', parent_id })
+  return await addComment({ post_id: postId, content, user_id: 'user_simulado', parent_id: parentId })
 }
 export const addComment = async (commentData) => {
   try {
@@ -523,5 +523,72 @@ export const subscribeToPostUpdates = (callback) => {
     return {
       unsubscribe: () => clearInterval(interval)
     }
+  }
+}
+
+// Funciones de compañeros
+export const searchUsers = async (searchTerm) => {
+  console.log('Simulando búsqueda de usuarios:', searchTerm)
+
+  // Simular usuarios de ejemplo
+  const mockUsers = [
+    {
+      id: 1,
+      username: 'ana_lopez',
+      full_name: 'Ana López',
+      avatar_url: null,
+      is_friend: false
+    },
+    {
+      id: 2,
+      username: 'carlos_garcia',
+      full_name: 'Carlos García',
+      avatar_url: null,
+      is_friend: false
+    },
+    {
+      id: 3,
+      username: 'maria_rodriguez',
+      full_name: 'María Rodríguez',
+      avatar_url: null,
+      is_friend: true
+    }
+  ]
+
+  // Filtrar por término de búsqueda
+  const filteredUsers = mockUsers.filter(user =>
+    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  return {
+    data: filteredUsers,
+    error: null
+  }
+}
+
+export const sendCompanionRequest = async (userId) => {
+  console.log('Simulando envío de solicitud de compañero:', userId)
+
+  // Simular respuesta exitosa
+  return {
+    data: {
+      id: Date.now(),
+      user_id: 'current-user',
+      companion_id: userId,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    },
+    error: null
+  }
+}
+
+export const removeCompanion = async (companionId) => {
+  console.log('Simulando eliminación de compañero:', companionId)
+
+  // Simular respuesta exitosa
+  return {
+    data: { success: true },
+    error: null
   }
 }
