@@ -2096,8 +2096,7 @@ i[class^="fas"] {
 /* Responsive */
 @media (max-width: 1024px) {
   .modern-sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    display: none;
   }
 
   .forum-main {

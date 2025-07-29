@@ -16,21 +16,19 @@ export function useTheme() {
     document.documentElement.setAttribute('data-theme', theme)
   }
 
-  // Inicializar tema al crear el composable
+
+  // Inicializar tema solo en el cliente (evitar SSR)
   const initTheme = () => {
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    currentTheme.value = savedTheme
-    document.documentElement.setAttribute('data-theme', savedTheme)
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') || 'light'
+      currentTheme.value = savedTheme
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    }
   }
 
   onMounted(() => {
     initTheme()
   })
-
-  // También inicializar inmediatamente si está en el browser
-  if (typeof window !== 'undefined') {
-    initTheme()
-  }
 
   return {
     currentTheme: computed(() => currentTheme.value),
