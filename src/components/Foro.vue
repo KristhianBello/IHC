@@ -7,7 +7,7 @@
           <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
           <h1 class="header-title">EcoVecinos</h1>
         </div>
-        
+
         <div class="header-center">
           <div class="language-selector">
             <button @click="toggleLanguage" class="btn-language btn-with-icon">
@@ -20,9 +20,9 @@
         <div class="header-right">
           <div class="user-menu">
             <button @click="toggleUserMenu" class="user-button btn-with-icon">
-              <img 
-                v-if="userProfile?.avatar_url" 
-                :src="userProfile.avatar_url" 
+              <img
+                v-if="userProfile?.avatar_url"
+                :src="userProfile.avatar_url"
                 :alt="userProfile.username"
                 class="user-avatar"
               />
@@ -32,7 +32,7 @@
               <span class="user-name">{{ userProfile?.username || 'Usuario' }}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            
+
             <div v-if="showUserMenu" class="user-dropdown">
               <router-link to="/perfil" class="dropdown-item btn-with-icon">
                 <i class="fas fa-user-cog"></i>
@@ -138,9 +138,9 @@
         :placeholder="t('searchPlaceholder')"
         class="search-input pl-10"
       />
-      <button 
-        v-if="searchTerm" 
-        @click="clearSearch" 
+      <button
+        v-if="searchTerm"
+        @click="clearSearch"
         class="clear-search-btn absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
       >
         <i class="fas fa-times"></i>
@@ -152,8 +152,8 @@
 
       <!-- Formulario de nueva publicación -->
       <div class="new-post-section">
-        <button 
-          @click="togglePostForm" 
+        <button
+          @click="togglePostForm"
           class="btn-new-post btn-with-icon"
           :class="{ active: showPostForm }"
         >
@@ -165,9 +165,9 @@
           <form @submit.prevent="submitPost" class="post-form">
             <div class="form-header">
               <div class="user-info">
-                <img 
-                  v-if="userProfile?.avatar_url" 
-                  :src="userProfile.avatar_url" 
+                <img
+                  v-if="userProfile?.avatar_url"
+                  :src="userProfile.avatar_url"
                   :alt="userProfile.username"
                   class="form-user-avatar"
                 />
@@ -195,14 +195,32 @@
                 required
               ></textarea>
 
-              <div class="location-input-wrapper">
-                <i class="fas fa-map-marker-alt location-icon"></i>
-                <input
-                  type="text"
-                  v-model="newPost.location"
-                  :placeholder="t('addLocation')"
-                  class="location-input"
-                />
+              <div class="location-section">
+                <button
+                  type="button"
+                  @click="showMapSelector = !showMapSelector"
+                  class="btn-map-toggle btn-with-icon"
+                >
+                  <i class="fas fa-map-marked-alt"></i>
+                  {{ showMapSelector ? t('hideMap') : t('selectLocation') }}
+                </button>
+
+                <div v-if="showMapSelector" class="map-selector-container">
+                  <MapSelector
+                    v-model="selectedMapLocation"
+                    @locationSelected="onLocationSelected"
+                  />
+                </div>
+
+                <div class="location-input-wrapper">
+                  <i class="fas fa-map-marker-alt location-icon"></i>
+                  <input
+                    type="text"
+                    v-model="newPost.location"
+                    :placeholder="t('addLocation')"
+                    class="location-input"
+                  />
+                </div>
               </div>
 
               <div class="form-actions">
@@ -238,9 +256,9 @@
         >
           <div class="post-header">
             <div class="post-author">
-              <img 
-                v-if="post.profiles?.avatar_url" 
-                :src="post.profiles.avatar_url" 
+              <img
+                v-if="post.profiles?.avatar_url"
+                :src="post.profiles.avatar_url"
                 :alt="post.profiles.username"
                 class="author-avatar"
               />
@@ -261,19 +279,19 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="post-menu">
-              <button 
-                v-if="canEditPost(post)" 
-                @click="editPost(post)" 
+              <button
+                v-if="canEditPost(post)"
+                @click="editPost(post)"
                 class="post-action-btn edit-btn"
                 :title="t('editPost')"
               >
                 <i class="fas fa-edit"></i>
               </button>
-              <button 
-                v-if="canDeletePost(post)" 
-                @click="deletePost(post.id)" 
+              <button
+                v-if="canDeletePost(post)"
+                @click="deletePost(post.id)"
                 class="post-action-btn delete-btn"
                 :title="t('deletePost')"
               >
@@ -297,7 +315,7 @@
               <i class="fas fa-heart"></i>
               <span>{{ post.likes_count || 0 }}</span>
             </button>
-            
+
             <button
               @click="toggleComments(post.id)"
               class="action-btn comment-btn btn-with-icon"
@@ -323,30 +341,30 @@
                 class="comment-item"
                 :class="{ 'is-reply': comment.parent_id }"
               >
-                <img 
-                  v-if="comment.profiles?.avatar_url" 
-                  :src="comment.profiles.avatar_url" 
+                <img
+                  v-if="comment.profiles?.avatar_url"
+                  :src="comment.profiles.avatar_url"
                   :alt="comment.profiles.username"
                   class="comment-avatar"
                 />
                 <div v-else class="comment-avatar-placeholder">
                   <i class="fas fa-user"></i>
                 </div>
-                
+
                 <div class="comment-content">
                   <div class="comment-header">
                     <h5>{{ comment.profiles?.username || 'Usuario' }}</h5>
                     <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                   </div>
-                  
+
                   <div v-if="comment.parent_comment" class="comment-reply-to">
                     {{ t('replyingTo') }} @{{ comment.parent_comment.profiles?.username }}
                   </div>
-                  
+
                   <p class="comment-text">{{ comment.content }}</p>
-                  
+
                   <div class="comment-actions">
-                    <button 
+                    <button
                       @click="startReply(post.id, comment)"
                       class="comment-action-btn btn-with-icon"
                     >
@@ -361,20 +379,20 @@
             <!-- Formulario de comentario -->
             <form @submit.prevent="submitComment(post.id)" class="comment-form">
               <div class="comment-input-wrapper">
-                <img 
-                  v-if="userProfile?.avatar_url" 
-                  :src="userProfile.avatar_url" 
+                <img
+                  v-if="userProfile?.avatar_url"
+                  :src="userProfile.avatar_url"
                   :alt="userProfile.username"
                   class="comment-user-avatar"
                 />
                 <div v-else class="comment-user-avatar-placeholder">
                   <i class="fas fa-user"></i>
                 </div>
-                
+
                 <div class="comment-input-container">
                   <div v-if="replyingTo[post.id]" class="reply-indicator">
                     <span>{{ t('replyingTo') }} @{{ replyingTo[post.id].profiles?.username }}</span>
-                    <button 
+                    <button
                       type="button"
                       @click="cancelReply(post.id)"
                       class="cancel-reply-btn"
@@ -382,7 +400,7 @@
                       <i class="fas fa-times"></i>
                     </button>
                   </div>
-                  
+
                   <input
                     type="text"
                     v-model="newComments[post.id]"
@@ -391,9 +409,9 @@
                     required
                   />
                 </div>
-                
-                <button 
-                  type="submit" 
+
+                <button
+                  type="submit"
                   class="comment-submit-btn"
                   :disabled="!newComments[post.id]?.trim()"
                 >
@@ -416,7 +434,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form @submit.prevent="updatePost" class="edit-form">
         <input
           type="text"
@@ -425,7 +443,7 @@
           class="edit-title-input"
           required
         />
-        
+
         <textarea
           v-model="editForm.content"
           :placeholder="t('postContentPlaceholder')"
@@ -433,14 +451,14 @@
           class="edit-content-textarea"
           required
         ></textarea>
-        
+
         <input
           type="text"
           v-model="editForm.location"
           :placeholder="t('addLocation')"
           class="edit-location-input"
         />
-        
+
         <div class="modal-actions">
           <button type="button" @click="cancelEdit" class="btn btn-outline btn-with-icon">
             {{ t('cancel') }}
@@ -458,14 +476,15 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  createPost, 
-  getPosts, 
-  toggleLike, 
+import MapSelector from './MapSelector.vue'
+import {
+  createPost,
+  getPosts,
+  toggleLike,
   checkUserLike,
   updatePost as updatePostAPI,
   deletePost as deletePostAPI,
-  createComment, 
+  createComment,
   getPostComments,
   subscribeToPostUpdates,
   getCurrentUser,
@@ -513,10 +532,22 @@ const newPost = ref({
   location: ''
 })
 
+// Variables para el selector de mapas
+const showMapSelector = ref(false)
+const selectedMapLocation = ref(null)
+
+// Función para manejar la selección de ubicación en el mapa
+const onLocationSelected = (location) => {
+  selectedMapLocation.value = location
+  if (location && location.address) {
+    newPost.value.location = location.address
+  }
+}
+
 // Computed properties
 const filteredPosts = computed(() => {
   if (!searchTerm.value) return posts.value
-  
+
   const term = searchTerm.value.toLowerCase()
   return posts.value.filter(post =>
     post.title?.toLowerCase().includes(term) ||
@@ -547,9 +578,9 @@ const loadPosts = ref(async () => {
   try {
     const { data, error } = await getPosts()
     if (error) throw error
-    
+
     posts.value = data || []
-    
+
     // Verificar likes del usuario para cada post
     for (const post of posts.value) {
       const { data: likeData } = await checkUserLike(post.id)
@@ -577,7 +608,7 @@ const setupWebSocket = ref(() => {
         }
       }
     }
-    
+
     if (payload.table === 'post_comments') {
       const postId = payload.new?.post_id || payload.old?.post_id
       if (visibleComments.value.has(postId)) {
@@ -586,7 +617,7 @@ const setupWebSocket = ref(() => {
       // Actualizar contador de comentarios
       updateCommentsCount(postId)
     }
-    
+
     if (payload.table === 'post_likes') {
       const postId = payload.new?.post_id || payload.old?.post_id
       updateLikesCount(postId)
@@ -625,7 +656,7 @@ const submitPost = ref(async () => {
 
   isSubmitting.value = true
   try {
-    const { data, error } = await createPost({
+    const { error } = await createPost({
       titulo: newPost.value.title,
       contenido: newPost.value.content,
       ubicacion: newPost.value.location
@@ -634,11 +665,13 @@ const submitPost = ref(async () => {
     if (error) throw error
 
     showNotification(t('postCreated'), 'success')
-    
+
     // Limpiar formulario
     newPost.value = { title: '', content: '', location: '' }
+    selectedMapLocation.value = null
+    showMapSelector.value = false
     showPostForm.value = false
-    
+
     // Recargar publicaciones
     await loadPosts.value()
   } catch (error) {
@@ -653,11 +686,11 @@ const canEditPost = ref((post) => {
   if (!currentUser.value || post.author_id !== currentUser.value.id) {
     return false
   }
-  
+
   const postDate = new Date(post.created_at)
   const now = new Date()
   const minutesDiff = (now - postDate) / (1000 * 60)
-  
+
   return minutesDiff <= 1
 })
 
@@ -682,7 +715,7 @@ const updatePost = ref(async () => {
 
   isUpdating.value = true
   try {
-    const { data, error } = await updatePostAPI(editingPost.value.id, {
+    const { error } = await updatePostAPI(editingPost.value.id, {
       titulo: editForm.value.title,
       contenido: editForm.value.content,
       ubicacion: editForm.value.location
@@ -726,7 +759,7 @@ const handleLike = ref(async (postId) => {
   if (likingPosts.value.has(postId)) return
 
   likingPosts.value.add(postId)
-  
+
   try {
     const { data, error } = await toggleLike(postId)
     if (error) throw error
@@ -762,7 +795,7 @@ const loadComments = ref(async (postId) => {
   try {
     const { data, error } = await getPostComments(postId)
     if (error) throw error
-    
+
     postComments.value[postId] = data || []
   } catch (error) {
     console.error('Error cargando comentarios:', error)
@@ -784,13 +817,13 @@ const submitComment = ref(async (postId) => {
       postComments.value[postId] = []
     }
     postComments.value[postId].push(data)
-    
+
     // Limpiar formulario
     newComments.value[postId] = ''
     if (replyingTo.value[postId]) {
       delete replyingTo.value[postId]
     }
-    
+
     showNotification(t('commentAdded'), 'success')
   } catch (error) {
     console.error('Error agregando comentario:', error)
@@ -855,10 +888,15 @@ const formatDate = ref((dateString) => {
   }
 })
 
-const showNotification = ref((message, type = 'info') => {
+const showNotification = (message, type = 'info') => {
   const notification = document.createElement('div')
   notification.className = `notification notification-${type}`
   notification.textContent = message
+
+  let backgroundColor = '#3b82f6' // default info color
+  if (type === 'error') backgroundColor = '#ef4444'
+  if (type === 'success') backgroundColor = '#22c55e'
+
   notification.style.cssText = `
     position: fixed;
     top: 20px;
@@ -866,7 +904,7 @@ const showNotification = ref((message, type = 'info') => {
     padding: 16px 24px;
     border-radius: 8px;
     color: white;
-    background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#3b82f6'};
+    background: ${backgroundColor};
     z-index: 1000;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     animation: slideIn 0.3s ease;
@@ -878,7 +916,7 @@ const showNotification = ref((message, type = 'info') => {
     notification.style.transform = 'translateX(100%)'
     setTimeout(() => notification.remove(), 300)
   }, 3000)
-})
+}
 
 // Watch para aplicar tema
 watch(currentTheme, (newTheme) => {
@@ -889,7 +927,7 @@ onMounted(async () => {
   await initializeUser.value()
   await loadPosts.value()
   setupWebSocket.value()
-  
+
   // Cerrar menú de usuario al hacer click fuera
   document.addEventListener('click', closeUserMenu.value)
 })
@@ -1174,11 +1212,9 @@ onUnmounted(() => {
 /* Contenido principal */
 .forum-main {
   flex: 1;
-  margin-left: 240px;
   padding: 2rem;
   max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto;
   padding-left: 260px;
   padding-right: 20px;
 }
@@ -1211,7 +1247,6 @@ onUnmounted(() => {
   top: 40%;
   transform: translateY(-50%);
   font-size: large;
-  transform: translate3d(0, -50%, 0);
   color: #999;
 }
 
@@ -1219,49 +1254,6 @@ onUnmounted(() => {
   background: none;
   border: none;
   cursor: pointer;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 1rem;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px var(--primary-green-light);
-}
-
-.clear-search-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.clear-search-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
-
-.clear-search-btn i {
-  font-size: 1rem;
 }
 
 /* Nueva publicación */
@@ -2174,5 +2166,48 @@ i[class^="fas"] {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Estilos para el selector de mapas */
+.location-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-map-toggle {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  align-self: flex-start;
+}
+
+.btn-map-toggle:hover {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.map-selector-container {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.map-selector-container .map-selector {
+  border: none;
+}
+
+.map-selector-container .map-container {
+  height: 300px;
 }
 </style>

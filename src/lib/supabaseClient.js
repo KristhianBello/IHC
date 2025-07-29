@@ -4,14 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://temp-demo.supabase.co'
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'temp-demo-key'
 
-// Cliente de Supabase (temporal para demo)
+// Cliente de Supabase
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
     schema: 'public'
   },
   auth: {
-    autoRefreshToken: false,
-    persistSession: false
+    autoRefreshToken: true,  // Habilita refresh automático de tokens
+    persistSession: true     // Mantiene la sesión persistente
   }
 })
 
@@ -107,29 +107,90 @@ export const deleteAdoption = async (adoptionId) => {
 }
 
 // ==================== FUNCIONES DEL FORO ====================
+// Simulación de almacenamiento de publicaciones en memoria
+let postsDatabase = [
+  {
+    id: 1,
+    title: "¡Bienvenidos a EcoVecinos!",
+    content: "Este es nuestro foro comunitario donde podemos compartir ideas, reportar problemas y colaborar juntos para mejorar nuestro barrio. ¡Esperamos ver muchas publicaciones interesantes!",
+    location: "Centro Comunitario",
+    likes_count: 5,
+    comments_count: 2,
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 horas atrás
+    author_id: 'admin',
+    autor: 'Administrador',
+    profiles: {
+      username: 'Administrador',
+      avatar_url: null
+    }
+  },
+  {
+    id: 2,
+    title: "Limpieza del parque central",
+    content: "Estamos organizando una jornada de limpieza para el próximo sábado en el parque central. ¡Todos son bienvenidos a participar! Traigan guantes y bolsas de basura.",
+    location: "Parque Central",
+    likes_count: 8,
+    comments_count: 4,
+    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 horas atrás
+    author_id: 'user_2',
+    autor: 'María González',
+    profiles: {
+      username: 'María González',
+      avatar_url: null
+    }
+  }
+]
+
 // Simulación de createPost
 export const createPost = async (postData) => {
   console.log('Simulando createPost:', postData)
+  
+  const newPost = {
+    id: Date.now(),
+    title: postData.titulo,      // Mapear titulo a title
+    content: postData.contenido, // Mapear contenido a content
+    location: postData.ubicacion, // Mapear ubicacion a location
+    likes_count: 0,
+    comments_count: 0,
+    created_at: new Date().toISOString(),
+    author_id: 'user_simulado',
+    autor: 'Usuario Actual',
+    profiles: {
+      username: 'Usuario Actual',
+      avatar_url: null
+    }
+  }
+
+  // Agregar al "almacén" de publicaciones
+  postsDatabase.unshift(newPost) // Agregar al inicio para mostrar las más recientes primero
+
+  // Simular notificación WebSocket
+  if (window.WebSocketSimulation) {
+    window.WebSocketSimulation.emit('post_created', newPost)
+  }
+
   return {
-    data: {
-      id: Date.now(),
-      ...postData,
-      likes_count: 0,
-      comments_count: 0,
-      created_at: new Date().toISOString(),
-      autor: postData.autor || 'Usuario Actual'
-    },
+    data: newPost,
     error: null
   }
-}
-
-// Simulación de updatePost
+}// Simulación de updatePost
 export const updatePostAPI = async (postId, postData) => {
   console.log('Actualizando publicación:', postId, postData)
 
+  // Buscar la publicación en el almacén
+  const postIndex = postsDatabase.findIndex(post => post.id === postId)
+  if (postIndex === -1) {
+    return {
+      data: null,
+      error: { message: 'Publicación no encontrada' }
+    }
+  }
+
+  const post = postsDatabase[postIndex]
+
   // Verificar que la publicación pueda editarse (menos de 1 minuto)
   const editTimeLimit = new Date(Date.now() - 60000) // 1 minuto atrás
-  const postCreatedAt = new Date(postData.created_at || new Date())
+  const postCreatedAt = new Date(post.created_at)
 
   if (postCreatedAt < editTimeLimit) {
     return {
@@ -138,12 +199,19 @@ export const updatePostAPI = async (postId, postData) => {
     }
   }
 
+  // Actualizar la publicación
+  const updatedPost = {
+    ...post,
+    title: postData.titulo,
+    content: postData.contenido,
+    location: postData.ubicacion,
+    updated_at: new Date().toISOString()
+  }
+
+  postsDatabase[postIndex] = updatedPost
+
   return {
-    data: {
-      id: postId,
-      ...postData,
-      updated_at: new Date().toISOString()
-    },
+    data: updatedPost,
     error: null
   }
 }
@@ -204,26 +272,23 @@ export const addPost = async (postData) => {
 export const getPosts = async () => {
   console.log('Obteniendo publicaciones desde la base de datos')
 
-  // En lugar de datos simulados, retornar array vacío para empezar limpio
+  // Retornar las publicaciones almacenadas en memoria
   return {
-    data: [],
+    data: postsDatabase,
     error: null
   }
 }
 
 export const deletePost = async (postId) => {
-  try {
-    const { error } = await supabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
-
-    if (error) throw error
-    return { error: null }
-  } catch {
-    console.log('Simulando eliminar post:', postId)
-    return { error: null }
+  console.log('Simulando eliminar post:', postId)
+  
+  // Eliminar del almacén en memoria
+  const index = postsDatabase.findIndex(post => post.id === postId)
+  if (index !== -1) {
+    postsDatabase.splice(index, 1)
   }
+  
+  return { error: null }
 }
 
 // Funciones para likes - mejoradas para un like por usuario

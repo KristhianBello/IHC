@@ -54,6 +54,8 @@ const translations = {
     postTitlePlaceholder: "¿Qué está pasando en tu barrio?",
     postContentPlaceholder: "Comparte los detalles...",
     addLocation: "Agregar ubicación",
+    selectLocation: "Seleccionar en mapa",
+    hideMap: "Ocultar mapa",
     writeComment: "Escribe un comentario...",
     writeReply: "Escribe una respuesta...",
     replyingTo: "Respondiendo a",
@@ -215,6 +217,8 @@ const translations = {
     postTitlePlaceholder: "What's happening in your neighborhood?",
     postContentPlaceholder: "Share the details...",
     addLocation: "Add location",
+    selectLocation: "Select on map",
+    hideMap: "Hide map",
     writeComment: "Write a comment...",
     writeReply: "Write a reply...",
     replyingTo: "Replying to",
@@ -333,6 +337,13 @@ export function useI18n() {
     }
   })
 
+  const changeLanguage = (lang) => {
+    if (lang && ['es', 'en'].includes(lang)) {
+      currentLanguage.value = lang
+      localStorage.setItem("language", currentLanguage.value)
+    }
+  }
+
   const toggleLanguage = () => {
     currentLanguage.value = currentLanguage.value === "es" ? "en" : "es"
     localStorage.setItem("language", currentLanguage.value)
@@ -342,5 +353,6 @@ export function useI18n() {
     currentLanguage: computed(() => currentLanguage.value),
     t: t.value,
     toggleLanguage,
+    changeLanguage,
   }
 }
