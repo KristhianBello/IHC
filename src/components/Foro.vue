@@ -28,7 +28,9 @@
               <div v-else class="user-avatar-placeholder">
                 <i class="fas fa-user"></i>
               </div>
-              <span class="user-name">{{ userProfile?.username || 'Usuario' }}</span>
+<span class="user-name">
+  {{ (userProfile?.first_name && userProfile?.last_name) ? `${userProfile.first_name} ${userProfile.last_name}` : (userProfile?.first_name || userProfile?.username || 'Usuario') }}
+</span>
               <i class="fas fa-chevron-down"></i>
             </button>
 

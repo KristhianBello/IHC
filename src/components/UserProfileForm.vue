@@ -258,7 +258,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { updateUserProfile } from '@/lib/supabaseClient'
+import { updateUserProfile, getProfile } from '@/lib/supabaseClient'
 import logo from '@/assets/logo.png'
 
 const router = useRouter()
@@ -317,6 +317,34 @@ const formData = ref({
   language: 'es',
   theme: 'light',
   avatar: null
+})
+
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const { data, error } = await getProfile()
+  if (data) {
+    // Asignar los datos recibidos al formulario
+    formData.value.firstName = data.first_name || ''
+    formData.value.lastName = data.last_name || ''
+    formData.value.email = data.email || ''
+    formData.value.phone = data.phone || ''
+    formData.value.birthDate = data.birth_date || ''
+    formData.value.gender = data.gender || ''
+    formData.value.address = data.address || ''
+    formData.value.neighborhood = data.neighborhood || ''
+    formData.value.city = data.city || ''
+    formData.value.emergencyContact = data.emergency_contact || ''
+    formData.value.bio = data.bio || ''
+    formData.value.interests = data.interests || []
+    formData.value.skills = data.skills || []
+    formData.value.organization = data.organization || ''
+    formData.value.volunteerTime = data.volunteer_time || ''
+    formData.value.notifications = data.notifications || { email: true, sms: false, push: true, newsletter: true }
+    formData.value.privacy = data.privacy || { showProfile: true, showContact: true, showParticipation: true }
+    formData.value.language = data.language || 'es'
+    formData.value.theme = data.theme || 'light'
+    formData.value.avatar = data.avatar_url || null
+  }
 })
 
 // User statistics (would come from backend)
