@@ -46,14 +46,24 @@
             <i class="fas fa-lock"></i>
             {{ t('password') }}
           </label>
-          <input
-            id="password"
-            v-model="formData.password"
-            type="password"
-            class="form-input"
-            :placeholder="t('passwordPlaceholder')"
-            required
-          />
+          <div class="password-input-container">
+            <input
+              id="password"
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-input"
+              :placeholder="t('passwordPlaceholder')"
+              required
+            />
+            <button
+              type="button"
+              @click="togglePasswordVisibility"
+              class="password-toggle-btn"
+              :title="showPassword ? t('hidePassword') : t('showPassword')"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
           <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
         </div>
 
@@ -62,14 +72,24 @@
             <i class="fas fa-lock"></i>
             {{ t('confirmPassword') }}
           </label>
-          <input
-            id="confirmPassword"
-            v-model="formData.confirmPassword"
-            type="password"
-            class="form-input"
-            :placeholder="t('confirmPasswordPlaceholder')"
-            required
-          />
+          <div class="password-input-container">
+            <input
+              id="confirmPassword"
+              v-model="formData.confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              class="form-input"
+              :placeholder="t('confirmPasswordPlaceholder')"
+              required
+            />
+            <button
+              type="button"
+              @click="toggleConfirmPasswordVisibility"
+              class="password-toggle-btn"
+              :title="showConfirmPassword ? t('hidePassword') : t('showPassword')"
+            >
+              <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
           <span v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
         </div>
 
@@ -314,6 +334,34 @@
 .flag {
   font-size: 1.2em;
 }
+
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #28a745;
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid #28a745;
+  outline-offset: 2px;
+}
 </style>
 
 
@@ -335,6 +383,16 @@ const formData = ref({
 
 const errors = ref({})
 const isSubmitting = ref(false)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
+}
+
+function toggleConfirmPasswordVisibility() {
+  showConfirmPassword.value = !showConfirmPassword.value
+}
 
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
