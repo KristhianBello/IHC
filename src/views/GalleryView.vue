@@ -40,16 +40,6 @@
             <option value="forum">{{ t('forumImages') }}</option>
           </select>
         </div>
-
-        <div class="search-group">
-          <i class="fas fa-search"></i>
-          <input
-            v-model="searchTerm"
-            type="text"
-            :placeholder="t('searchImages')"
-            class="search-input"
-          />
-        </div>
       </div>
     </header>
 
@@ -361,6 +351,7 @@ onMounted(() => {
   transform: translateY(-50%);
   color: #6c757d;
 }
+
 
 .search-input {
   width: 100%;

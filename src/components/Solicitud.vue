@@ -422,7 +422,7 @@ input[type="file"] {
 /* Iconos */
 i.fas {
   color: var(--primary-green);
-  width: 20px;
+  width: 40px;
   text-align: center;
 }
 

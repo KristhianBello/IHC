@@ -38,10 +38,6 @@
                 <i class="fas fa-user-cog"></i>
                 {{ t('editProfile') }}
               </router-link>
-              <button @click="toggleTheme" class="dropdown-item btn-with-icon">
-                <i :class="currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
-                {{ currentTheme === 'dark' ? t('lightMode') : t('darkMode') }}
-              </button>
               <div class="dropdown-divider"></div>
               <button @click="handleLogout" class="dropdown-item logout btn-with-icon">
                 <i class="fas fa-sign-out-alt"></i>
@@ -50,8 +46,15 @@
             </div>
           </div>
         </div>
+
+
       </div>
     </header>
+
+  <!-- Botón de tema fuera del header, realmente fuera del div principal -->
+  <button @click="toggleTheme" class="btn-theme btn-with-icon theme-fixed-btn">
+    <i :class="currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+  </button>
 
     <!-- Sidebar moderna -->
     <aside class="modern-sidebar">
@@ -493,10 +496,25 @@ import {
 } from '../lib/supabaseClient.js'
 import { useI18n } from '../composables/useI18n.js'
 import { useTheme } from '../composables/useTheme.js'
-
+const { currentTheme, toggleTheme } = useTheme()
 const router = useRouter()
 const { t, currentLanguage, toggleLanguage } = useI18n()
-const { currentTheme, toggleTheme } = useTheme()
+
+
+// Inicializar tema desde localStorage si existe
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme && savedTheme !== currentTheme.value) {
+    setTheme(savedTheme)
+  }
+  document.documentElement.setAttribute('data-theme', currentTheme.value)
+})
+
+// Actualizar el DOM y localStorage al cambiar el tema
+watch(currentTheme, (newTheme) => {
+  document.documentElement.setAttribute('data-theme', newTheme)
+  localStorage.setItem('theme', newTheme)
+})
 
 // Estado principal
 const posts = ref([])
@@ -921,9 +939,11 @@ const showNotification = (message, type = 'info') => {
 // Watch para aplicar tema
 watch(currentTheme, (newTheme) => {
   document.documentElement.setAttribute('data-theme', newTheme)
-}, { immediate: true })
+  localStorage.setItem('theme', newTheme)
+})
 
 onMounted(async () => {
+  document.documentElement.setAttribute('data-theme', currentTheme.value)
   await initializeUser.value()
   await loadPosts.value()
   setupWebSocket.value()
@@ -1059,6 +1079,26 @@ onUnmounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+}
+
+/* Botón de tema fijo */
+.theme-fixed-btn {
+  position: fixed;
+  top: 14px;
+  right: 24px;
+  z-index: 2000;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.theme-fixed-btn:hover {
+  background: var(--primary-green-light);
+  color: var(--primary-green);
 }
 
 /* Menú de usuario */

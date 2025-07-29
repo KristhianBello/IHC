@@ -443,8 +443,9 @@ function showNotification(message, type = 'info') {
 
 .search-icon {
   position: absolute;
-  left: 1rem;
-  top: 50%;
+  right: 1rem;
+  top: 40%;
+  font-size: large;
   transform: translateY(-50%);
   color: var(--text-secondary);
 }
