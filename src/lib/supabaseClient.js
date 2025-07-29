@@ -29,7 +29,7 @@ let currentLoggedUser = null
 // Función de registro real
 export const signUp = async ({ email, password, userData }) => {
   console.log('Simulando registro:', { nombre: userData?.nombre, email, password })
-  
+
   // Verificar si el usuario ya existe
   if (registeredUsers.has(email)) {
     return {
@@ -37,7 +37,7 @@ export const signUp = async ({ email, password, userData }) => {
       error: { message: 'El usuario ya existe' }
     }
   }
-  
+
   // Crear nuevo usuario
   const newUser = {
     id: `user_real_${Date.now()}`,
@@ -46,14 +46,14 @@ export const signUp = async ({ email, password, userData }) => {
     username: userData?.nombre || 'Usuario',
     isRealUser: true
   }
-  
+
   registeredUsers.set(email, newUser)
   currentLoggedUser = newUser
-  
+
   // Guardar en localStorage para persistencia
   localStorage.setItem('currentUser', JSON.stringify(newUser))
   localStorage.setItem('isRealUser', 'true')
-  
+
   return {
     data: { user: newUser },
     error: null
@@ -63,22 +63,22 @@ export const signUp = async ({ email, password, userData }) => {
 // Función de login real
 export const signInWithPassword = async ({ email, password }) => {
   console.log('Simulando login:', email, password)
-  
+
   const user = registeredUsers.get(email)
-  
+
   if (!user || user.password !== password) {
     return {
       data: null,
       error: { message: 'Credenciales incorrectas' }
     }
   }
-  
+
   currentLoggedUser = user
-  
+
   // Guardar en localStorage para persistencia
   localStorage.setItem('currentUser', JSON.stringify(user))
   localStorage.setItem('isRealUser', user.isRealUser ? 'true' : 'false')
-  
+
   return {
     data: { user },
     error: null
@@ -346,7 +346,7 @@ export const getProfile = async (userId = null) => {
         error: { message: 'No hay usuario logueado' }
       }
     }
-    
+
     return {
       data: {
         id: currentUser.id,
@@ -600,11 +600,11 @@ export const createComment = async (postId, content, parentId = null) => {
       }
     }
 
-    return await addComment({ 
-      post_id: postId, 
-      content, 
-      user_id: currentUser.id, 
-      parent_id: parentId 
+    return await addComment({
+      post_id: postId,
+      content,
+      user_id: currentUser.id,
+      parent_id: parentId
     })
   } catch (error) {
     console.error('Error creando comentario:', error)

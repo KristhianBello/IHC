@@ -574,7 +574,7 @@ const filteredPosts = computed(() => {
 })
 
 // Métodos principales
-const initializeUser = ref(async () => {
+const initializeUser = async () => {
   try {
     currentUser.value = await getCurrentUser()
     if (currentUser.value) {
@@ -587,9 +587,9 @@ const initializeUser = ref(async () => {
     console.error('Error inicializando usuario:', error)
     router.push('/')
   }
-})
+}
 
-const loadPosts = ref(async () => {
+const loadPosts = async () => {
   loading.value = true
   try {
     const { data, error } = await getPosts()
@@ -608,13 +608,13 @@ const loadPosts = ref(async () => {
   } finally {
     loading.value = false
   }
-})
+}
 
-const setupWebSocket = ref(() => {
+const setupWebSocket = () => {
   subscription.value = subscribeToPostUpdates((payload) => {
     if (payload.table === 'posts') {
       if (payload.eventType === 'INSERT') {
-        loadPosts.value() // Recargar para obtener datos completos
+        loadPosts() // Recargar para obtener datos completos
       } else if (payload.eventType === 'DELETE') {
         posts.value = posts.value.filter(p => p.id !== payload.old.id)
       } else if (payload.eventType === 'UPDATE') {
@@ -639,9 +639,9 @@ const setupWebSocket = ref(() => {
       updateLikesCount(postId)
     }
   })
-})
+}
 
-const updateLikesCount = ref(async (postId) => {
+const updateLikesCount = async (postId) => {
   const post = posts.value.find(p => p.id === postId)
   if (post) {
     const { data } = await getPosts()
@@ -650,9 +650,9 @@ const updateLikesCount = ref(async (postId) => {
       post.likes_count = updatedPost.likes_count
     }
   }
-})
+}
 
-const updateCommentsCount = ref(async (postId) => {
+const updateCommentsCount = async (postId) => {
   const post = posts.value.find(p => p.id === postId)
   if (post) {
     const { data } = await getPosts()
@@ -661,10 +661,10 @@ const updateCommentsCount = ref(async (postId) => {
       post.comments_count = updatedPost.comments_count
     }
   }
-})
+}
 
 // Métodos de publicaciones
-const submitPost = ref(async () => {
+const submitPost = async () => {
   if (!newPost.value.title?.trim() || !newPost.value.content?.trim()) {
     showNotification(t('fillRequiredFields'), 'error')
     return
@@ -689,16 +689,16 @@ const submitPost = ref(async () => {
     showPostForm.value = false
 
     // Recargar publicaciones
-    await loadPosts.value()
+    await loadPosts()
   } catch (error) {
     console.error('Error creando publicación:', error)
     showNotification(t('errorCreatingPost'), 'error')
   } finally {
     isSubmitting.value = false
   }
-})
+}
 
-const canEditPost = ref((post) => {
+const canEditPost = (post) => {
   if (!currentUser.value || post.author_id !== currentUser.value.id) {
     return false
   }
@@ -708,22 +708,22 @@ const canEditPost = ref((post) => {
   const minutesDiff = (now - postDate) / (1000 * 60)
 
   return minutesDiff <= 1
-})
+}
 
-const canDeletePost = ref((post) => {
+const canDeletePost = (post) => {
   return currentUser.value && post.author_id === currentUser.value.id
-})
+}
 
-const editPost = ref((post) => {
+const editPost = (post) => {
   editingPost.value = post
   editForm.value = {
     title: post.title,
     content: post.content,
     location: post.location || ''
   }
-})
+}
 
-const updatePost = ref(async () => {
+const updatePost = async () => {
   if (!editForm.value.title?.trim() || !editForm.value.content?.trim()) {
     showNotification(t('fillRequiredFields'), 'error')
     return
@@ -741,21 +741,21 @@ const updatePost = ref(async () => {
 
     showNotification(t('postUpdated'), 'success')
     cancelEdit()
-    await loadPosts.value()
+    await loadPosts()
   } catch (error) {
     console.error('Error actualizando publicación:', error)
     showNotification(t('errorUpdatingPost'), 'error')
   } finally {
     isUpdating.value = false
   }
-})
+}
 
-const cancelEdit = ref(() => {
+const cancelEdit = () => {
   editingPost.value = null
   editForm.value = { title: '', content: '', location: '' }
-})
+}
 
-const deletePost = ref(async (postId) => {
+const deletePost = async (postId) => {
   if (!confirm(t('confirmDeletePost'))) return
 
   try {
@@ -768,10 +768,10 @@ const deletePost = ref(async (postId) => {
     console.error('Error eliminando publicación:', error)
     showNotification(t('errorDeletingPost'), 'error')
   }
-})
+}
 
 // Métodos de likes
-const handleLike = ref(async (postId) => {
+const handleLike = async (postId) => {
   if (likingPosts.value.has(postId)) return
 
   likingPosts.value.add(postId)
@@ -795,19 +795,19 @@ const handleLike = ref(async (postId) => {
   } finally {
     likingPosts.value.delete(postId)
   }
-})
+}
 
 // Métodos de comentarios
-const toggleComments = ref(async (postId) => {
+const toggleComments = async (postId) => {
   if (visibleComments.value.has(postId)) {
     visibleComments.value.delete(postId)
   } else {
     visibleComments.value.add(postId)
     await loadComments(postId)
   }
-})
+}
 
-const loadComments = ref(async (postId) => {
+const loadComments = async (postId) => {
   try {
     const { data, error } = await getPostComments(postId)
     if (error) throw error
@@ -817,9 +817,9 @@ const loadComments = ref(async (postId) => {
     console.error('Error cargando comentarios:', error)
     showNotification(t('errorLoadingComments'), 'error')
   }
-})
+}
 
-const submitComment = ref(async (postId) => {
+const submitComment = async (postId) => {
   const content = newComments.value[postId]?.trim()
   if (!content) return
 
@@ -845,48 +845,48 @@ const submitComment = ref(async (postId) => {
     console.error('Error agregando comentario:', error)
     showNotification(t('errorAddingComment'), 'error')
   }
-})
+}
 
-const startReply = ref((postId, comment) => {
+const startReply = (postId, comment) => {
   replyingTo.value[postId] = comment
-})
+}
 
-const cancelReply = ref((postId) => {
+const cancelReply = (postId) => {
   delete replyingTo.value[postId]
-})
+}
 
 // Métodos de utilidad
-const togglePostForm = ref(() => {
+const togglePostForm = () => {
   showPostForm.value = !showPostForm.value
   if (!showPostForm.value) {
     newPost.value = { title: '', content: '', location: '' }
   }
-})
+}
 
-const toggleUserMenu = ref(() => {
+const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
-})
+}
 
-const closeUserMenu = ref((event) => {
+const closeUserMenu = (event) => {
   if (!event.target.closest('.user-menu')) {
     showUserMenu.value = false
   }
-})
+}
 
-const clearSearch = ref(() => {
+const clearSearch = () => {
   searchTerm.value = ''
-})
+}
 
-const handleLogout = ref(async () => {
+const handleLogout = async () => {
   try {
     await signOut()
     router.push('/')
   } catch (error) {
     console.error('Error en logout:', error)
   }
-})
+}
 
-const formatDate = ref((dateString) => {
+const formatDate = (dateString) => {
   const date = new Date(dateString)
   const now = new Date()
   const diff = now - date
@@ -902,7 +902,7 @@ const formatDate = ref((dateString) => {
   } else {
     return `${days}d`
   }
-})
+}
 
 const showNotification = (message, type = 'info') => {
   const notification = document.createElement('div')
@@ -942,19 +942,19 @@ watch(currentTheme, (newTheme) => {
 
 onMounted(async () => {
   document.documentElement.setAttribute('data-theme', currentTheme.value)
-  await initializeUser.value()
-  await loadPosts.value()
-  setupWebSocket.value()
+  await initializeUser()
+  await loadPosts()
+  setupWebSocket()
 
   // Cerrar menú de usuario al hacer click fuera
-  document.addEventListener('click', closeUserMenu.value)
+  document.addEventListener('click', closeUserMenu)
 })
 
 onUnmounted(() => {
   if (subscription.value) {
     subscription.value.unsubscribe()
   }
-  document.removeEventListener('click', closeUserMenu.value)
+  document.removeEventListener('click', closeUserMenu)
 })
 </script>
 
