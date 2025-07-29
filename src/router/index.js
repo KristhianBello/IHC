@@ -7,6 +7,7 @@ import AdoptionsView from '@/views/AdoptionsView.vue'
 import ReportView from '@/views/ReportView.vue'
 import TaskScheduleView from '@/views/TaskScheduleView.vue'
 import UserProfileView from '@/views/UserProfileView.vue'
+import CompanionsView from '@/views/CompanionsView.vue'
 
 
 const routes = [
@@ -49,6 +50,11 @@ const routes = [
     path: '/perfil',
     name: 'perfil',
     component: UserProfileView,
+  },
+  {
+    path: '/compañeros',
+    name: 'compañeros',
+    component: CompanionsView,
   },
 ]
 
