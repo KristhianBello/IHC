@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 
 // Configuración temporal para desarrollo sin Supabase real
@@ -108,6 +107,64 @@ export const deleteAdoption = async (adoptionId) => {
 }
 
 // ==================== FUNCIONES DEL FORO ====================
+// Simulación de createPost
+export const createPost = async (postData) => {
+  console.log('Simulando createPost:', postData)
+  return {
+    data: {
+      id: Date.now(),
+      ...postData,
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      autor: postData.autor || 'Usuario Actual'
+    },
+    error: null
+  }
+}
+
+// Simulación de updatePost
+export const updatePostAPI = async (postId, postData) => {
+  console.log('Simulando updatePost:', postId, postData)
+  return {
+    data: {
+      id: postId,
+      ...postData,
+      updated_at: new Date().toISOString()
+    },
+    error: null
+  }
+}
+
+// Alias para compatibilidad con Foro.vue
+export const updatePost = updatePostAPI;
+
+// Simulación de getCurrentUser
+export const getCurrentUser = async () => {
+  return { id: 'user_simulado', username: 'Usuario Actual' }
+}
+
+// Simulación de getProfile
+export const getProfile = async (userId = 'user_simulado') => {
+  return {
+    data: {
+      id: userId,
+      username: 'Usuario Actual',
+      avatar_url: '',
+      bio: 'Miembro activo',
+      theme: 'light',
+      language: 'es',
+      updated_at: new Date().toISOString()
+    },
+    error: null
+  }
+}
+
+// Simulación de signOut
+export const signOut = async () => {
+  console.log('Simulando signOut')
+  return { error: null }
+}
 
 // Funciones para publicaciones del foro
 export const addPost = async (postData) => {
@@ -194,6 +251,24 @@ export const deletePost = async (postId) => {
 }
 
 // Funciones para likes
+// Verifica si el usuario ha dado like a un post
+export const checkUserLike = async (postId, userId = 'user_simulado') => {
+  try {
+    const { data, error } = await supabase
+      .from('post_likes')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return { data: { liked: !!data }, error: null }
+  } catch {
+    // Simulación: aleatorio para demo
+    console.log('Simulando checkUserLike:', postId, userId)
+    return { data: { liked: Math.random() > 0.5 }, error: null }
+  }
+}
 export const toggleLike = async (postId, userId) => {
   try {
     // Verificar si ya existe el like
@@ -245,6 +320,12 @@ export const getPostLikes = async (postId) => {
 }
 
 // Funciones para comentarios
+// Alias para compatibilidad con Foro.vue
+// Función única compatible con Foro.vue
+export const createComment = async (postId, content, parentId = null) => {
+  // Simulación: el usuario es 'user_simulado'
+  return await addComment({ post_id: postId, content, user_id: 'user_simulado', parent_id })
+}
 export const addComment = async (commentData) => {
   try {
     const { data, error } = await supabase

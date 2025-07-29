@@ -1,307 +1,662 @@
 <template>
-  <div class="companions-manager">
-    <div class="header">
-      <h2><i class="fas fa-users"></i> Mis Compañeros</h2>
-      <button @click="mostrarAgregarForm = !mostrarAgregarForm" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Agregar Compañero
-      </button>
-    </div>
-
-    <!-- Formulario para agregar compañero -->
-    <div v-if="mostrarAgregarForm" class="add-companion-form">
-      <div class="form-group">
-        <input
-          type="text"
-          v-model="buscarUsuario"
-          placeholder="Buscar usuario por nombre o email..."
-          class="search-input"
-          @input="buscarUsuarios"
-        />
+  <div class="companions-layout">
+    <!-- Header principal -->
+    <header class="main-header">
+      <div class="header-container">
+        <div class="header-left">
+          <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
+          <h1 class="header-title">{{ myCompanions }}</h1>
+        </div>
+        
+        <div class="header-right">
+          <router-link to="/foro" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i>
+            {{ backToForum }}
+          </router-link>
+        </div>
       </div>
+    </header>
 
-      <div v-if="usuariosEncontrados.length > 0" class="search-results">
-        <div
-          v-for="usuario in usuariosEncontrados"
-          :key="usuario.id"
-          class="user-result"
-          @click="enviarSolicitudAmistad(usuario)"
-        >
-          <div class="user-avatar">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="user-info">
-            <h4>{{ usuario.username }}</h4>
-            <p>{{ usuario.email }}</p>
-          </div>
-          <button class="btn btn-small btn-primary">
-            <i class="fas fa-user-plus"></i> Agregar
+    <div class="companions-container">
+      <!-- Sección de búsqueda y agregar compañeros -->
+      <div class="search-section">
+        <div class="search-header">
+          <h2>
+            <i class="fas fa-user-plus"></i>
+            {{ findCompanions }}
+          </h2>
+        </div>
+        
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            v-model="searchTerm"
+            :placeholder="searchByUsername"
+            class="search-input"
+            @input="debounceSearch"
+          />
+          <button v-if="searchTerm" @click="clearSearch" class="clear-search-btn">
+            <i class="fas fa-times"></i>
           </button>
         </div>
-      </div>
-    </div>
 
-    <!-- Lista de compañeros -->
-    <div class="companions-list">
-      <div
-        v-for="companion in compañeros"
-        :key="companion.id"
-        class="companion-card"
-      >
-        <div class="companion-avatar">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <div class="companion-info">
-          <h3>{{ companion.companion_name }}</h3>
-          <span class="companion-status" :class="companion.status">
-            {{ getStatusText(companion.status) }}
-          </span>
-        </div>
-        <div class="companion-actions">
-          <button
-            v-if="companion.status === 'pending'"
-            @click="aceptarSolicitud(companion.id)"
-            class="btn btn-small btn-success"
+        <!-- Resultados de búsqueda -->
+        <div v-if="searchResults.length > 0" class="search-results">
+          <div
+            v-for="user in searchResults"
+            :key="user.id"
+            class="user-result-card"
           >
-            <i class="fas fa-check"></i> Aceptar
-          </button>
-          <button
-            @click="eliminarCompanion(companion.id)"
-            class="btn btn-small btn-danger"
-          >
-            <i class="fas fa-times"></i> {{ companion.status === 'pending' ? 'Rechazar' : 'Eliminar' }}
-          </button>
+            <div class="user-info">
+              <img 
+                v-if="user.avatar_url" 
+                :src="user.avatar_url" 
+                :alt="user.username"
+                class="user-avatar"
+              />
+              <div v-else class="user-avatar-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+              
+              <div class="user-details">
+                <h4>{{ user.username }}</h4>
+                <p>{{ user.email }}</p>
+              </div>
+            </div>
+            
+            <button
+              @click="sendRequest(user.id)"
+              :disabled="isRequesting || isAlreadyCompanion(user.id)"
+              class="btn btn-primary btn-sm"
+            >
+              <i class="fas fa-user-plus"></i>
+              {{ isAlreadyCompanion(user.id) ? alreadyCompanion : addCompanion }}
+            </button>
+          </div>
+        </div>
+        
+        <div v-else-if="searchTerm && !isSearching" class="no-results">
+          <i class="fas fa-search"></i>
+          <p>{{ noUsersFound }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Estado vacío -->
-    <div v-if="compañeros.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <i class="fas fa-users"></i>
+      <!-- Lista de compañeros -->
+      <div class="companions-section">
+        <div class="section-header">
+          <h2>
+            <i class="fas fa-users"></i>
+            {{ myCompanions }} ({{ companions.length }})
+          </h2>
+        </div>
+
+        <div v-if="loading" class="loading-state">
+          <div class="spinner"></div>
+          <p>{{ loadingCompanions }}</p>
+        </div>
+
+        <div v-else-if="companions.length === 0" class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3>{{ noCompanions }}</h3>
+          <p>{{ noCompanionsMessage }}</p>
+        </div>
+
+        <div v-else class="companions-grid">
+          <div
+            v-for="companion in companions"
+            :key="companion.id"
+            class="companion-card"
+          >
+            <div class="companion-info">
+              <img 
+                v-if="companion.companion_profile?.avatar_url" 
+                :src="companion.companion_profile.avatar_url" 
+                :alt="companion.companion_profile.username"
+                class="companion-avatar"
+              />
+              <div v-else class="companion-avatar-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+              
+              <div class="companion-details">
+                <h4>{{ companion.companion_profile?.username }}</h4>
+                <p class="companion-status">
+                  <i class="fas fa-circle status-online"></i>
+                  {{ active }}
+                </p>
+              </div>
+            </div>
+
+            <div class="companion-actions">
+              <button
+                @click="viewProfile(companion.companion_id)"
+                class="btn btn-outline btn-sm"
+                :title="viewProfileTitle"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              
+              <button
+                @click="removeCompanion(companion.id, companion.companion_profile?.username)"
+                class="btn btn-danger btn-sm"
+                :title="removeCompanionTitle"
+              >
+                <i class="fas fa-user-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <h3>No tienes compañeros aún</h3>
-      <p>Agrega compañeros para poder compartir publicaciones y colaborar en proyectos comunitarios.</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getCompanions, addCompanion } from '../lib/supabaseClient.js'
+import { ref, onMounted, computed } from 'vue'
+import { 
+  searchUsers, 
+  sendCompanionRequest, 
+  getCompanions, 
+  removeCompanion as removeCompanionAPI 
+} from '../lib/supabaseClient.js'
+import { useI18n } from '../composables/useI18n.js'
 
-const compañeros = ref([])
-const mostrarAgregarForm = ref(false)
-const buscarUsuario = ref('')
-const usuariosEncontrados = ref([])
-const currentUserId = ref('user_simulado')
+const { t } = useI18n()
 
-onMounted(async () => {
-  await cargarCompañeros()
+const myCompanions = t('myCompanions')
+const backToForum = t('backToForum')
+const findCompanions = t('findCompanions')
+const searchByUsername = t('searchByUsername')
+const alreadyCompanion = t('alreadyCompanion')
+const addCompanion = t('addCompanion')
+const noUsersFound = t('noUsersFound')
+const loadingCompanions = t('loadingCompanions')
+const noCompanions = t('noCompanions')
+const noCompanionsMessage = t('noCompanionsMessage')
+const active = t('active')
+const viewProfileTitle = t('viewProfile')
+const removeCompanionTitle = t('removeCompanion')
+
+// Estados reactivos
+const companions = ref([])
+const searchTerm = ref('')
+const searchResults = ref([])
+const loading = ref(true)
+const isSearching = ref(false)
+const isRequesting = ref(false)
+const searchTimeout = ref(null)
+
+// Computed properties
+const isAlreadyCompanion = computed(() => {
+  return (userId) => {
+    return companions.value.some(c => c.companion_id === userId)
+  }
 })
 
-async function cargarCompañeros() {
-  const { data, error } = await getCompanions(currentUserId.value)
-  if (!error && data) {
-    compañeros.value = data
+// Métodos principales
+onMounted(async () => {
+  await loadCompanions()
+})
+
+async function loadCompanions() {
+  loading.value = true
+  try {
+    const { data, error } = await getCompanions()
+    if (error) throw error
+    
+    companions.value = data || []
+  } catch (error) {
+    console.error('Error cargando compañeros:', error)
+    showNotification(t('errorLoadingCompanions'), 'error')
+  } finally {
+    loading.value = false
   }
 }
 
-function buscarUsuarios() {
-  // Simulación de búsqueda de usuarios
-  if (buscarUsuario.value.length > 2) {
-    usuariosEncontrados.value = [
-      {
-        id: 'user_search_1',
-        username: 'Ana García',
-        email: 'ana.garcia@email.com'
-      },
-      {
-        id: 'user_search_2',
-        username: 'Luis Morales',
-        email: 'luis.morales@email.com'
-      }
-    ].filter(user =>
-      user.username.toLowerCase().includes(buscarUsuario.value.toLowerCase()) ||
-      user.email.toLowerCase().includes(buscarUsuario.value.toLowerCase())
-    )
-  } else {
-    usuariosEncontrados.value = []
+// Búsqueda con debounce
+function debounceSearch() {
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  
+  searchTimeout.value = setTimeout(async () => {
+    if (searchTerm.value.length >= 2) {
+      await performSearch()
+    } else {
+      searchResults.value = []
+    }
+  }, 500)
+}
+
+async function performSearch() {
+  isSearching.value = true
+  try {
+    const { data, error } = await searchUsers(searchTerm.value)
+    if (error) throw error
+    
+    searchResults.value = data || []
+  } catch (error) {
+    console.error('Error en búsqueda:', error)
+    showNotification(t('errorSearching'), 'error')
+  } finally {
+    isSearching.value = false
   }
 }
 
-async function enviarSolicitudAmistad(usuario) {
-  const { data, error } = await addCompanion(usuario.id)
-
-  if (!error) {
-    mostrarNotificacion(`Solicitud enviada a ${usuario.username}`)
-    buscarUsuario.value = ''
-    usuariosEncontrados.value = []
-    mostrarAgregarForm.value = false
-
-    // Agregar a la lista como pendiente
-    compañeros.value.push({
-      id: data.id,
-      companion_id: usuario.id,
-      companion_name: usuario.username,
-      status: 'pending'
-    })
+function clearSearch() {
+  searchTerm.value = ''
+  searchResults.value = []
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
   }
 }
 
-async function aceptarSolicitud(companionId) {
-  // Simular aceptación de solicitud
-  const companion = compañeros.value.find(c => c.id === companionId)
-  if (companion) {
-    companion.status = 'accepted'
-    mostrarNotificacion('Solicitud aceptada')
+async function sendRequest(userId) {
+  isRequesting.value = true
+  try {
+    const { data, error } = await sendCompanionRequest(userId)
+    if (error) throw error
+    
+    showNotification(t('requestSent'), 'success')
+    
+    // Limpiar búsqueda
+    clearSearch()
+    
+  } catch (error) {
+    console.error('Error enviando solicitud:', error)
+    showNotification(t('errorSendingRequest'), 'error')
+  } finally {
+    isRequesting.value = false
   }
 }
 
-async function eliminarCompanion(companionId) {
-  if (confirm('¿Estás seguro de que quieres eliminar este compañero?')) {
-    compañeros.value = compañeros.value.filter(c => c.id !== companionId)
-    mostrarNotificacion('Compañero eliminado')
+async function removeCompanion(companionId, username) {
+  if (!confirm(t('confirmRemoveCompanion').replace('{username}', username))) {
+    return
+  }
+
+  try {
+    const { error } = await removeCompanionAPI(companionId)
+    if (error) throw error
+    
+    companions.value = companions.value.filter(c => c.id !== companionId)
+    showNotification(t('companionRemoved'), 'success')
+  } catch (error) {
+    console.error('Error eliminando compañero:', error)
+    showNotification(t('errorRemovingCompanion'), 'error')
   }
 }
 
-function getStatusText(status) {
-  const statusMap = {
-    'pending': 'Pendiente',
-    'accepted': 'Aceptado',
-    'blocked': 'Bloqueado'
-  }
-  return statusMap[status] || status
+function viewProfile(userId) {
+  // Implementar vista de perfil
+  showNotification(t('profileViewNotImplemented'), 'info')
 }
 
-function mostrarNotificacion(mensaje, tipo = 'success') {
-  const notificacion = document.createElement('div')
-  notificacion.className = `notificacion notificacion-${tipo}`
-  notificacion.textContent = mensaje
-  notificacion.style.cssText = `
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div')
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+  notification.style.cssText = `
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 12px 20px;
+    padding: 16px 24px;
     border-radius: 8px;
     color: white;
-    background-color: ${tipo === 'error' ? '#e74c3c' : tipo === 'warning' ? '#f39c12' : '#2ecc71'};
+    background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#3b82f6'};
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     animation: slideIn 0.3s ease;
   `
 
-  document.body.appendChild(notificacion)
+  document.body.appendChild(notification)
 
   setTimeout(() => {
-    notificacion.remove()
+    notification.style.transform = 'translateX(100%)'
+    setTimeout(() => notification.remove(), 300)
   }, 3000)
 }
 </script>
 
 <style scoped>
-.companions-manager {
-  max-width: 800px;
+/* Variables CSS para temas */
+:root {
+  --primary-green: #059669;
+  --primary-green-hover: #047857;
+  --primary-green-light: #d1fae5;
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --bg-primary: var(--white);
+  --bg-secondary: var(--gray-50);
+  --border-color: var(--gray-200);
+  --danger-color: #ef4444;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  --white: #1f2937;
+  --gray-50: #374151;
+  --gray-100: #4b5563;
+  --gray-200: #6b7280;
+  --gray-300: #9ca3af;
+  --gray-400: #d1d5db;
+  --gray-500: #e5e7eb;
+  --gray-600: #f3f4f6;
+  --gray-700: #f9fafb;
+  --gray-800: #ffffff;
+  --gray-900: #ffffff;
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-400);
+  --bg-primary: #1f2937;
+  --bg-secondary: #374151;
+  --border-color: #4b5563;
+}
+
+.companions-layout {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+}
+
+/* Header */
+.main-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  margin: 0;
+}
+
+/* Contenedor principal */
+.companions-container {
+  max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
-}
-
-.header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.header h2 {
-  color: var(--primary-green);
+/* Sección de búsqueda */
+.search-section {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.add-companion-form {
-  background-color: var(--white);
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+.search-input-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
 }
 
 .search-input {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid var(--gray-border);
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
+  color: var(--text-primary);
+  transition: all 0.2s;
 }
 
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px var(--primary-green-light);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* Resultados de búsqueda */
 .search-results {
-  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.user-result {
+.user-result-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
   padding: 1rem;
-  border: 1px solid var(--gray-border);
+  background: var(--bg-secondary);
   border-radius: 8px;
-  margin-bottom: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
 }
 
-.user-result:hover {
-  background-color: var(--light-bg);
+.user-result-card:hover {
   border-color: var(--primary-green);
+  background: var(--primary-green-light);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .user-avatar {
-  width: 45px;
-  height: 45px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background-color: var(--secondary-green);
+  object-fit: cover;
+}
+
+.user-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary-green);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
-.user-info {
-  flex: 1;
+.user-details h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
 }
 
-.user-info h4 {
-  margin-bottom: 0.2rem;
-  color: var(--dark-text);
+.user-details p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
 }
 
-.user-info p {
-  color: #777;
-  font-size: 0.9rem;
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
 }
 
-.companions-list {
+.no-results i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Sección de compañeros */
+.companions-section {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Grid de compañeros */
+.companions-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
 }
 
 .companion-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
   padding: 1.5rem;
-  background-color: var(--white);
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.companion-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.companion-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .companion-avatar {
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background-color: var(--secondary-green);
+  object-fit: cover;
+}
+
+.companion-avatar-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,30 +664,24 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
   font-size: 1.5rem;
 }
 
-.companion-info {
-  flex: 1;
-}
-
-.companion-info h3 {
-  margin-bottom: 0.3rem;
-  color: var(--dark-text);
+.companion-details h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
 }
 
 .companion-status {
-  font-size: 0.85rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
 }
 
-.companion-status.pending {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.companion-status.accepted {
-  background-color: #d4edda;
-  color: #155724;
+.status-online {
+  color: #22c55e;
+  font-size: 0.5rem;
 }
 
 .companion-actions {
@@ -340,70 +689,96 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
   gap: 0.5rem;
 }
 
+/* Botones */
 .btn {
-  padding: 0.7rem 1.2rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
 }
 
 .btn-primary {
-  background-color: var(--primary-green);
+  background: var(--primary-green);
   color: var(--white);
 }
 
-.btn-success {
-  background-color: #28a745;
-  color: var(--white);
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-green-hover);
+}
+
+.btn-primary:disabled {
+  background: var(--gray-300);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-green);
+  color: var(--primary-green);
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background: var(--danger-color);
   color: var(--white);
 }
 
-.btn-small {
-  padding: 0.5rem 0.8rem;
-  font-size: 0.85rem;
+.btn-danger:hover {
+  background: #dc2626;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+/* Responsive */
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 1rem;
+  }
+
+  .companions-container {
+    padding: 1rem;
+  }
+
+  .search-section,
+  .companions-section {
+    padding: 1.5rem;
+  }
+
+  .companions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .companion-card {
+    padding: 1rem;
+  }
+
+  .user-result-card {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .companion-actions {
+    align-self: flex-end;
+  }
 }
 
-.empty-state {
-  text-align: center;
-  padding: 3rem 2rem;
-  background-color: var(--white);
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.empty-icon {
-  font-size: 3rem;
-  color: var(--primary-green);
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  color: var(--dark-text);
-  margin-bottom: 1rem;
-}
-
-.empty-state p {
-  color: #777;
-  max-width: 400px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
+/* Notificaciones */
 @keyframes slideIn {
   from {
     transform: translateX(100%);

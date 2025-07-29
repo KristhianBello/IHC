@@ -1,25 +1,60 @@
 <template>
   <div class="forum-layout">
+    <!-- Header principal -->
+    <header class="main-header">
+      <div class="header-container">
+        <div class="header-left">
+          <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
+          <h1 class="header-title">EcoVecinos</h1>
+        </div>
+        
+        <div class="header-center">
+          <div class="language-selector">
+            <button @click="toggleLanguage" class="btn-language">
+              <i class="fas fa-globe"></i>
+              {{ currentLanguage === 'es' ? 'ES' : 'EN' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="user-menu">
+            <button @click="toggleUserMenu" class="user-button">
+              <img 
+                v-if="userProfile?.avatar_url" 
+                :src="userProfile.avatar_url" 
+                :alt="userProfile.username"
+                class="user-avatar"
+              />
+              <div v-else class="user-avatar-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+              <span class="user-name">{{ userProfile?.username || 'Usuario' }}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            
+            <div v-if="showUserMenu" class="user-dropdown">
+              <router-link to="/perfil" class="dropdown-item">
+                <i class="fas fa-user-cog"></i>
+                {{ t('editProfile') }}
+              </router-link>
+              <button @click="toggleTheme" class="dropdown-item">
+                <i :class="currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                {{ currentTheme === 'dark' ? t('lightMode') : t('darkMode') }}
+              </button>
+              <div class="dropdown-divider"></div>
+              <button @click="handleLogout" class="dropdown-item logout">
+                <i class="fas fa-sign-out-alt"></i>
+                {{ t('logout') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
     <!-- Sidebar moderna -->
     <aside class="modern-sidebar">
-      <div class="sidebar-header">
-        <img src="@/assets/logo.png" alt="Logo" class="sidebar-logo" />
-        <h2 class="sidebar-title">EcoVecinos</h2>
-      </div>
-
-      <div class="profile-card">
-        <div class="profile-avatar">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <div class="profile-info">
-          <h3>Usuario Actual</h3>
-          <p>Miembro activo</p>
-        </div>
-        <router-link to="/perfil" class="profile-link">
-          <i class="fas fa-cog"></i>
-        </router-link>
-      </div>
-
       <nav class="sidebar-nav">
         <ul class="nav-menu">
           <li>
@@ -27,7 +62,7 @@
               <div class="nav-icon">
                 <i class="fas fa-home"></i>
               </div>
-              <span>Inicio</span>
+              <span>{{ t('home') }}</span>
             </router-link>
           </li>
           <li>
@@ -35,7 +70,7 @@
               <div class="nav-icon">
                 <i class="fas fa-map-marked-alt"></i>
               </div>
-              <span>Mapa de espacios</span>
+              <span>{{ t('spaceMap') }}</span>
             </router-link>
           </li>
           <li>
@@ -43,7 +78,7 @@
               <div class="nav-icon">
                 <i class="fas fa-images"></i>
               </div>
-              <span>Galería</span>
+              <span>{{ t('gallery') }}</span>
             </router-link>
           </li>
           <li>
@@ -51,7 +86,7 @@
               <div class="nav-icon">
                 <i class="fas fa-seedling"></i>
               </div>
-              <span>Mis adopciones</span>
+              <span>{{ t('myAdoptions') }}</span>
             </router-link>
           </li>
           <li>
@@ -59,7 +94,7 @@
               <div class="nav-icon">
                 <i class="fas fa-hand-holding-heart"></i>
               </div>
-              <span>Solicitar adopción</span>
+              <span>{{ t('requestAdoption') }}</span>
             </router-link>
           </li>
           <li>
@@ -67,7 +102,7 @@
               <div class="nav-icon">
                 <i class="fas fa-exclamation-triangle"></i>
               </div>
-              <span>Reportar problema</span>
+              <span>{{ t('reportProblem') }}</span>
             </router-link>
           </li>
           <li>
@@ -75,7 +110,7 @@
               <div class="nav-icon">
                 <i class="fas fa-calendar-plus"></i>
               </div>
-              <span>Programar tareas</span>
+              <span>{{ t('scheduleTasks') }}</span>
             </router-link>
           </li>
           <li>
@@ -83,343 +118,280 @@
               <div class="nav-icon">
                 <i class="fas fa-users"></i>
               </div>
-              <span>Mis compañeros</span>
+              <span>{{ t('myCompanions') }}</span>
             </router-link>
           </li>
         </ul>
       </nav>
-
-      <div class="sidebar-footer">
-        <div class="stats-mini">
-          <div class="stat-item">
-            <i class="fas fa-seedling"></i>
-            <span>3 Adopciones</span>
-          </div>
-          <div class="stat-item">
-            <i class="fas fa-calendar-check"></i>
-            <span>12 Tareas</span>
-          </div>
-        </div>
-      </div>
     </aside>
 
     <!-- Contenido principal -->
     <main class="forum-main">
-      <div class="forum-header">
-        <div class="header-content">
-          <div class="header-title">
-            <h1>
-              <i class="fas fa-comments"></i>
-              Foro Vecinal
-            </h1>
-            <p>Comparte, colabora y cuida tu comunidad</p>
-          </div>
-          <button
-            class="btn btn-primary new-post-btn"
-            @click="mostrarFormulario = !mostrarFormulario"
-          >
-            <i class="fas fa-plus"></i>
-            {{ mostrarFormulario ? 'Cancelar' : 'Nueva publicación' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Barra de búsqueda moderna -->
+      <!-- Sección de búsqueda -->
       <div class="search-section">
         <div class="search-container">
           <div class="search-input-wrapper">
             <i class="fas fa-search search-icon"></i>
             <input
               type="text"
-              v-model="busqueda"
-              placeholder="Buscar publicaciones, ubicaciones o usuarios..."
+              v-model="searchTerm"
+              :placeholder="t('searchPlaceholder')"
               class="search-input"
             />
-            <button
-              v-if="busqueda"
-              @click="limpiarBusqueda"
-              class="clear-search-btn"
-              type="button"
-            >
+            <button v-if="searchTerm" @click="clearSearch" class="clear-search-btn">
               <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="search-filters">
-            <button class="filter-btn active">
-              <i class="fas fa-fire"></i>
-              Populares
-            </button>
-            <button class="filter-btn">
-              <i class="fas fa-clock"></i>
-              Recientes
-            </button>
-            <button class="filter-btn">
-              <i class="fas fa-map-marker-alt"></i>
-              Cerca de mí
             </button>
           </div>
         </div>
       </div>
 
       <!-- Formulario de nueva publicación -->
-      <div v-if="mostrarFormulario" class="new-post-form fade-in">
-        <form @submit.prevent="agregarPublicacion" class="post-form">
-          <div class="form-header">
-            <div class="user-avatar">
-              <i class="fas fa-user-circle"></i>
-            </div>
-            <div class="form-title">
-              <h3>Crear nueva publicación</h3>
-              <p>Comparte algo interesante con tu comunidad</p>
-            </div>
-          </div>
+      <div class="new-post-section">
+        <button 
+          @click="togglePostForm" 
+          class="btn-new-post"
+          :class="{ active: showPostForm }"
+        >
+          <i :class="showPostForm ? 'fas fa-times' : 'fas fa-plus'"></i>
+          {{ showPostForm ? t('cancel') : t('newPost') }}
+        </button>
 
-          <div class="form-body">
-            <div class="form-group">
+        <div v-if="showPostForm" class="new-post-form slide-in">
+          <form @submit.prevent="submitPost" class="post-form">
+            <div class="form-header">
+              <div class="user-info">
+                <img 
+                  v-if="userProfile?.avatar_url" 
+                  :src="userProfile.avatar_url" 
+                  :alt="userProfile.username"
+                  class="form-user-avatar"
+                />
+                <div v-else class="form-user-avatar-placeholder">
+                  <i class="fas fa-user"></i>
+                </div>
+                <span class="form-username">{{ userProfile?.username || 'Usuario' }}</span>
+              </div>
+            </div>
+
+            <div class="form-body">
               <input
                 type="text"
-                v-model="nueva.titulo"
-                placeholder="¿Qué está pasando en tu barrio?"
+                v-model="newPost.title"
+                :placeholder="t('postTitlePlaceholder')"
                 class="title-input"
                 required
               />
-            </div>
 
-            <div class="form-group">
               <textarea
-                v-model="nueva.contenido"
-                placeholder="Comparte los detalles..."
+                v-model="newPost.content"
+                :placeholder="t('postContentPlaceholder')"
                 rows="4"
                 class="content-textarea"
                 required
               ></textarea>
-            </div>
 
-            <div class="form-group">
               <div class="location-input-wrapper">
                 <i class="fas fa-map-marker-alt location-icon"></i>
                 <input
                   type="text"
-                  v-model="nueva.ubicacion"
-                  placeholder="Agregar ubicación"
+                  v-model="newPost.location"
+                  :placeholder="t('addLocation')"
                   class="location-input"
                 />
               </div>
-              <MapSelector
-                v-model="nuevaUbicacion"
-                @locationSelected="onLocationSelected"
-              />
-            </div>
 
-            <div class="form-actions">
-              <div class="post-options">
-                <button type="button" class="option-btn">
-                  <i class="fas fa-image"></i>
-                  Foto
-                </button>
-                <button type="button" class="option-btn">
-                  <i class="fas fa-poll"></i>
-                  Encuesta
-                </button>
-                <button type="button" class="option-btn">
-                  <i class="fas fa-calendar"></i>
-                  Evento
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+                  <i class="fas fa-paper-plane"></i>
+                  {{ isSubmitting ? t('publishing') : t('publish') }}
                 </button>
               </div>
-              <button type="submit" class="btn btn-primary submit-btn">
-                <i class="fas fa-paper-plane"></i>
-                Publicar
-              </button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
       <!-- Lista de publicaciones -->
       <div class="posts-container">
-        <!-- Mensaje cuando no se encuentran resultados -->
-        <div v-if="publicacionesFiltradas.length === 0 && busqueda" class="no-results">
-          <div class="no-results-content">
-            <div class="no-results-icon">
-              <i class="fas fa-search"></i>
-            </div>
-            <h3>No se encontraron publicaciones</h3>
-            <p>No hay publicaciones que coincidan con "<strong>{{ busqueda }}</strong>"</p>
-            <button @click="limpiarBusqueda" class="btn btn-outline">
-              <i class="fas fa-times"></i>
-              Limpiar búsqueda
-            </button>
-          </div>
+        <div v-if="loading" class="loading-state">
+          <div class="spinner"></div>
+          <p>{{ t('loadingPosts') }}</p>
         </div>
 
-        <!-- Publicaciones -->
+        <div v-else-if="filteredPosts.length === 0" class="no-posts">
+          <div class="no-posts-icon">
+            <i class="fas fa-comments"></i>
+          </div>
+          <h3>{{ t('noPosts') }}</h3>
+          <p>{{ t('noPostsMessage') }}</p>
+        </div>
+
         <article
-          v-for="(post, index) in publicacionesFiltradas"
-          :key="index"
+          v-for="post in filteredPosts"
+          :key="post.id"
           class="post-card fade-in"
         >
           <div class="post-header">
             <div class="post-author">
-              <div class="author-avatar">
-                <i class="fas fa-user-circle"></i>
+              <img 
+                v-if="post.profiles?.avatar_url" 
+                :src="post.profiles.avatar_url" 
+                :alt="post.profiles.username"
+                class="author-avatar"
+              />
+              <div v-else class="author-avatar-placeholder">
+                <i class="fas fa-user"></i>
               </div>
               <div class="author-info">
-                <h4>{{ post.autor }}</h4>
+                <h4>{{ post.profiles?.username || 'Usuario desconocido' }}</h4>
                 <div class="post-meta">
                   <span class="post-date">
                     <i class="fas fa-clock"></i>
-                    {{ post.fecha }}
+                    {{ formatDate(post.created_at) }}
                   </span>
-                  <span class="post-location">
+                  <span v-if="post.location" class="post-location">
                     <i class="fas fa-map-marker-alt"></i>
-                    {{ post.ubicacion }}
+                    {{ post.location }}
                   </span>
                 </div>
               </div>
             </div>
+            
             <div class="post-menu">
-              <button class="menu-btn">
-                <i class="fas fa-ellipsis-h"></i>
+              <button 
+                v-if="canEditPost(post)" 
+                @click="editPost(post)" 
+                class="post-action-btn edit-btn"
+                :title="t('editPost')"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                v-if="canDeletePost(post)" 
+                @click="deletePost(post.id)" 
+                class="post-action-btn delete-btn"
+                :title="t('deletePost')"
+              >
+                <i class="fas fa-trash"></i>
               </button>
             </div>
           </div>
 
           <div class="post-content">
-            <h3 class="post-title">{{ post.titulo }}</h3>
-            <p class="post-text">{{ post.contenido }}</p>
+            <h3 class="post-title">{{ post.title }}</h3>
+            <p class="post-text">{{ post.content }}</p>
           </div>
 
           <div class="post-actions">
             <button
+              @click="handleLike(post.id)"
               class="action-btn like-btn"
-              :class="{ 'liked': post.liked }"
-              @click="manejarLike(post.id, index)"
+              :class="{ liked: post.user_liked }"
+              :disabled="likingPosts.has(post.id)"
             >
               <i class="fas fa-heart"></i>
               <span>{{ post.likes_count || 0 }}</span>
             </button>
             
             <button
+              @click="toggleComments(post.id)"
               class="action-btn comment-btn"
-              @click="toggleComentarios(post.id, index)"
             >
               <i class="fas fa-comment"></i>
               <span>{{ post.comments_count || 0 }}</span>
             </button>
-            
-            <button
-              class="action-btn share-btn"
-              @click="toggleCompartir(post.id)"
-            >
-              <i class="fas fa-share"></i>
-              <span>Compartir</span>
-            </button>
-
-            <button class="action-btn bookmark-btn">
-              <i class="fas fa-bookmark"></i>
-            </button>
           </div>
 
-          <!-- Panel de compartir -->
-          <div v-if="compartirVisible[post.id]" class="share-panel slide-in">
-            <div class="share-header">
-              <h4>
-                <i class="fas fa-users"></i>
-                Compartir con compañeros
-              </h4>
-              <button @click="toggleCompartir(post.id)" class="close-btn">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <div class="companions-grid">
-              <div
-                v-for="companion in compañeros"
-                :key="companion.id"
-                class="companion-card"
-              >
-                <input
-                  type="checkbox"
-                  :id="`companion-${companion.companion_id}`"
-                  class="companion-checkbox"
-                />
-                <label :for="`companion-${companion.companion_id}`" class="companion-label">
-                  <div class="companion-avatar">
-                    <i class="fas fa-user"></i>
-                  </div>
-                  <span>{{ companion.companion_name }}</span>
-                </label>
-              </div>
-            </div>
-            
-            <div class="share-message">
-              <textarea
-                v-model="mensajeCompartir[post.id]"
-                placeholder="Agregar un mensaje (opcional)..."
-                class="message-input"
-                rows="2"
-              ></textarea>
-            </div>
-            
-            <div class="share-actions">
-              <button @click="compartirPost(post.id)" class="btn btn-primary">
-                <i class="fas fa-paper-plane"></i>
-                Enviar
-              </button>
-            </div>
-          </div>
-
-          <!-- Comentarios -->
-          <div v-if="comentariosVisibles[post.id]" class="comments-section slide-in">
+          <!-- Sección de comentarios -->
+          <div v-if="visibleComments.has(post.id)" class="comments-section slide-in">
             <div class="comments-header">
-              <h4>Comentarios</h4>
-              <button @click="toggleComentarios(post.id, index)" class="close-comments-btn">
+              <h4>{{ t('comments') }}</h4>
+              <button @click="toggleComments(post.id)" class="close-comments-btn">
                 <i class="fas fa-times"></i>
               </button>
             </div>
 
             <div class="comments-list">
               <div
-                v-for="comentario in post.comentarios"
-                :key="comentario.id"
+                v-for="comment in postComments[post.id] || []"
+                :key="comment.id"
                 class="comment-item"
+                :class="{ 'is-reply': comment.parent_id }"
               >
-                <div class="comment-avatar">
-                  <i class="fas fa-user-circle"></i>
+                <img 
+                  v-if="comment.profiles?.avatar_url" 
+                  :src="comment.profiles.avatar_url" 
+                  :alt="comment.profiles.username"
+                  class="comment-avatar"
+                />
+                <div v-else class="comment-avatar-placeholder">
+                  <i class="fas fa-user"></i>
                 </div>
+                
                 <div class="comment-content">
                   <div class="comment-header">
-                    <h5>{{ comentario.autor }}</h5>
-                    <span class="comment-date">{{ formatearFecha(comentario.created_at) }}</span>
+                    <h5>{{ comment.profiles?.username || 'Usuario' }}</h5>
+                    <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                   </div>
-                  <p>{{ comentario.content }}</p>
+                  
+                  <div v-if="comment.parent_comment" class="comment-reply-to">
+                    {{ t('replyingTo') }} @{{ comment.parent_comment.profiles?.username }}
+                  </div>
+                  
+                  <p class="comment-text">{{ comment.content }}</p>
+                  
                   <div class="comment-actions">
-                    <button class="comment-action-btn">
-                      <i class="fas fa-heart"></i>
-                      Me gusta
-                    </button>
-                    <button class="comment-action-btn">
+                    <button 
+                      @click="startReply(post.id, comment)"
+                      class="comment-action-btn"
+                    >
                       <i class="fas fa-reply"></i>
-                      Responder
+                      {{ t('reply') }}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <form @submit.prevent="agregarComentario(post.id, index)" class="comment-form">
+            <!-- Formulario de comentario -->
+            <form @submit.prevent="submitComment(post.id)" class="comment-form">
               <div class="comment-input-wrapper">
-                <div class="comment-user-avatar">
-                  <i class="fas fa-user-circle"></i>
-                </div>
-                <input
-                  type="text"
-                  v-model="nuevoComentario[post.id]"
-                  placeholder="Escribe un comentario..."
-                  class="comment-input"
-                  required
+                <img 
+                  v-if="userProfile?.avatar_url" 
+                  :src="userProfile.avatar_url" 
+                  :alt="userProfile.username"
+                  class="comment-user-avatar"
                 />
-                <button type="submit" class="comment-submit-btn">
+                <div v-else class="comment-user-avatar-placeholder">
+                  <i class="fas fa-user"></i>
+                </div>
+                
+                <div class="comment-input-container">
+                  <div v-if="replyingTo[post.id]" class="reply-indicator">
+                    <span>{{ t('replyingTo') }} @{{ replyingTo[post.id].profiles?.username }}</span>
+                    <button 
+                      type="button"
+                      @click="cancelReply(post.id)"
+                      class="cancel-reply-btn"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    v-model="newComments[post.id]"
+                    :placeholder="replyingTo[post.id] ? t('writeReply') : t('writeComment')"
+                    class="comment-input"
+                    required
+                  />
+                </div>
+                
+                <button 
+                  type="submit" 
+                  class="comment-submit-btn"
+                  :disabled="!newComments[post.id]?.trim()"
+                >
                   <i class="fas fa-paper-plane"></i>
                 </button>
               </div>
@@ -429,428 +401,752 @@
       </div>
     </main>
   </div>
+
+  <!-- Modal de edición -->
+  <div v-if="editingPost" class="modal-overlay" @click="cancelEdit">
+    <div class="modal-content" @click.stop>
+      <div class="modal-header">
+        <h3>{{ t('editPost') }}</h3>
+        <button @click="cancelEdit" class="close-modal-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form @submit.prevent="updatePost" class="edit-form">
+        <input
+          type="text"
+          v-model="editForm.title"
+          :placeholder="t('postTitlePlaceholder')"
+          class="edit-title-input"
+          required
+        />
+        
+        <textarea
+          v-model="editForm.content"
+          :placeholder="t('postContentPlaceholder')"
+          rows="4"
+          class="edit-content-textarea"
+          required
+        ></textarea>
+        
+        <input
+          type="text"
+          v-model="editForm.location"
+          :placeholder="t('addLocation')"
+          class="edit-location-input"
+        />
+        
+        <div class="modal-actions">
+          <button type="button" @click="cancelEdit" class="btn btn-outline">
+            {{ t('cancel') }}
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="isUpdating">
+            {{ isUpdating ? t('updating') : t('update') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup>
-defineOptions({ name: 'ForoComponent' })
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import MapSelector from './MapSelector.vue'
-import {
-  addPost,
-  getPosts,
-  toggleLike,
-  addComment,
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { 
+  createPost, 
+  getPosts, 
+  toggleLike, 
+  checkUserLike,
+  updatePost as updatePostAPI,
+  deletePost as deletePostAPI,
+  createComment, 
   getPostComments,
-  getCompanions,
-  sharePostWithCompanions,
-  subscribeToPostUpdates
+  subscribeToPostUpdates,
+  getCurrentUser,
+  getProfile,
+  signOut
 } from '../lib/supabaseClient.js'
+import { useI18n } from '../composables/useI18n.js'
+import { useTheme } from '../composables/useTheme.js'
 
-const mostrarFormulario = ref(false)
-const busqueda = ref('')
-const nuevaUbicacion = ref(null)
-const publicaciones = ref([])
-const compañeros = ref([])
+const router = useRouter()
+const { t, currentLanguage, toggleLanguage } = useI18n()
+const { currentTheme, toggleTheme } = useTheme()
+
+// Estado principal
+const posts = ref([])
+const loading = ref(true)
+const currentUser = ref(null)
+const userProfile = ref(null)
+const showUserMenu = ref(false)
+const showPostForm = ref(false)
+const searchTerm = ref('')
+const isSubmitting = ref(false)
+const isUpdating = ref(false)
+const likingPosts = ref(new Set())
 const subscription = ref(null)
-const currentUserId = ref('user_simulado')
 
 // Estados para comentarios
-const comentariosVisibles = ref({})
-const nuevoComentario = ref({})
+const visibleComments = ref(new Set())
+const postComments = ref({})
+const newComments = ref({})
+const replyingTo = ref({})
 
-// Estados para compartir
-const compartirVisible = ref({})
-const mensajeCompartir = ref({})
-
-const nueva = ref({
-  autor: 'Usuario Actual',
-  titulo: '',
-  contenido: '',
-  ubicacion: '',
-  coordenadas: null
+// Estados para edición
+const editingPost = ref(null)
+const editForm = ref({
+  title: '',
+  content: '',
+  location: ''
 })
 
-// Computed property para filtrar publicaciones
-const publicacionesFiltradas = computed(() => {
-  if (!busqueda.value) {
-    return publicaciones.value
-  }
+// Formulario de nueva publicación
+const newPost = ref({
+  title: '',
+  content: '',
+  location: ''
+})
 
-  const termino = busqueda.value.toLowerCase()
-  return publicaciones.value.filter(post =>
-    post.titulo.toLowerCase().includes(termino) ||
-    post.contenido.toLowerCase().includes(termino) ||
-    post.autor.toLowerCase().includes(termino) ||
-    post.ubicacion.toLowerCase().includes(termino)
+// Computed properties
+const filteredPosts = computed(() => {
+  if (!searchTerm.value) return posts.value
+  
+  const term = searchTerm.value.toLowerCase()
+  return posts.value.filter(post =>
+    post.title?.toLowerCase().includes(term) ||
+    post.content?.toLowerCase().includes(term) ||
+    post.location?.toLowerCase().includes(term) ||
+    post.profiles?.username?.toLowerCase().includes(term)
   )
 })
 
-// Cargar datos iniciales
+// Métodos principales
+const initializeUser = ref(async () => {
+  try {
+    currentUser.value = await getCurrentUser()
+    if (currentUser.value) {
+      const { data: profile } = await getProfile()
+      userProfile.value = profile
+    } else {
+      router.push('/')
+    }
+  } catch (error) {
+    console.error('Error inicializando usuario:', error)
+    router.push('/')
+  }
+})
+
+const loadPosts = ref(async () => {
+  loading.value = true
+  try {
+    const { data, error } = await getPosts()
+    if (error) throw error
+    
+    posts.value = data || []
+    
+    // Verificar likes del usuario para cada post
+    for (const post of posts.value) {
+      const { data: likeData } = await checkUserLike(post.id)
+      post.user_liked = likeData?.liked || false
+    }
+  } catch (error) {
+    console.error('Error cargando publicaciones:', error)
+    showNotification(t('errorLoadingPosts'), 'error')
+  } finally {
+    loading.value = false
+  }
+})
+
+const setupWebSocket = ref(() => {
+  subscription.value = subscribeToPostUpdates((payload) => {
+    if (payload.table === 'posts') {
+      if (payload.eventType === 'INSERT') {
+        loadPosts.value() // Recargar para obtener datos completos
+      } else if (payload.eventType === 'DELETE') {
+        posts.value = posts.value.filter(p => p.id !== payload.old.id)
+      } else if (payload.eventType === 'UPDATE') {
+        const index = posts.value.findIndex(p => p.id === payload.new.id)
+        if (index !== -1) {
+          posts.value[index] = { ...posts.value[index], ...payload.new }
+        }
+      }
+    }
+    
+    if (payload.table === 'post_comments') {
+      const postId = payload.new?.post_id || payload.old?.post_id
+      if (visibleComments.value.has(postId)) {
+        loadComments(postId)
+      }
+      // Actualizar contador de comentarios
+      updateCommentsCount(postId)
+    }
+    
+    if (payload.table === 'post_likes') {
+      const postId = payload.new?.post_id || payload.old?.post_id
+      updateLikesCount(postId)
+    }
+  })
+})
+
+const updateLikesCount = ref(async (postId) => {
+  const post = posts.value.find(p => p.id === postId)
+  if (post) {
+    const { data } = await getPosts()
+    const updatedPost = data?.find(p => p.id === postId)
+    if (updatedPost) {
+      post.likes_count = updatedPost.likes_count
+    }
+  }
+})
+
+const updateCommentsCount = ref(async (postId) => {
+  const post = posts.value.find(p => p.id === postId)
+  if (post) {
+    const { data } = await getPosts()
+    const updatedPost = data?.find(p => p.id === postId)
+    if (updatedPost) {
+      post.comments_count = updatedPost.comments_count
+    }
+  }
+})
+
+// Métodos de publicaciones
+const submitPost = ref(async () => {
+  if (!newPost.value.title?.trim() || !newPost.value.content?.trim()) {
+    showNotification(t('fillRequiredFields'), 'error')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const { data, error } = await createPost({
+      titulo: newPost.value.title,
+      contenido: newPost.value.content,
+      ubicacion: newPost.value.location
+    })
+
+    if (error) throw error
+
+    showNotification(t('postCreated'), 'success')
+    
+    // Limpiar formulario
+    newPost.value = { title: '', content: '', location: '' }
+    showPostForm.value = false
+    
+    // Recargar publicaciones
+    await loadPosts.value()
+  } catch (error) {
+    console.error('Error creando publicación:', error)
+    showNotification(t('errorCreatingPost'), 'error')
+  } finally {
+    isSubmitting.value = false
+  }
+})
+
+const canEditPost = ref((post) => {
+  if (!currentUser.value || post.author_id !== currentUser.value.id) {
+    return false
+  }
+  
+  const postDate = new Date(post.created_at)
+  const now = new Date()
+  const minutesDiff = (now - postDate) / (1000 * 60)
+  
+  return minutesDiff <= 1
+})
+
+const canDeletePost = ref((post) => {
+  return currentUser.value && post.author_id === currentUser.value.id
+})
+
+const editPost = ref((post) => {
+  editingPost.value = post
+  editForm.value = {
+    title: post.title,
+    content: post.content,
+    location: post.location || ''
+  }
+})
+
+const updatePost = ref(async () => {
+  if (!editForm.value.title?.trim() || !editForm.value.content?.trim()) {
+    showNotification(t('fillRequiredFields'), 'error')
+    return
+  }
+
+  isUpdating.value = true
+  try {
+    const { data, error } = await updatePostAPI(editingPost.value.id, {
+      titulo: editForm.value.title,
+      contenido: editForm.value.content,
+      ubicacion: editForm.value.location
+    })
+
+    if (error) throw error
+
+    showNotification(t('postUpdated'), 'success')
+    cancelEdit()
+    await loadPosts.value()
+  } catch (error) {
+    console.error('Error actualizando publicación:', error)
+    showNotification(t('errorUpdatingPost'), 'error')
+  } finally {
+    isUpdating.value = false
+  }
+})
+
+const cancelEdit = ref(() => {
+  editingPost.value = null
+  editForm.value = { title: '', content: '', location: '' }
+})
+
+const deletePost = ref(async (postId) => {
+  if (!confirm(t('confirmDeletePost'))) return
+
+  try {
+    const { error } = await deletePostAPI(postId)
+    if (error) throw error
+
+    posts.value = posts.value.filter(p => p.id !== postId)
+    showNotification(t('postDeleted'), 'success')
+  } catch (error) {
+    console.error('Error eliminando publicación:', error)
+    showNotification(t('errorDeletingPost'), 'error')
+  }
+})
+
+// Métodos de likes
+const handleLike = ref(async (postId) => {
+  if (likingPosts.value.has(postId)) return
+
+  likingPosts.value.add(postId)
+  
+  try {
+    const { data, error } = await toggleLike(postId)
+    if (error) throw error
+
+    const post = posts.value.find(p => p.id === postId)
+    if (post) {
+      post.user_liked = data.liked
+      if (data.liked) {
+        post.likes_count = (post.likes_count || 0) + 1
+      } else {
+        post.likes_count = Math.max((post.likes_count || 0) - 1, 0)
+      }
+    }
+  } catch (error) {
+    console.error('Error en like:', error)
+    showNotification(t('errorLiking'), 'error')
+  } finally {
+    likingPosts.value.delete(postId)
+  }
+})
+
+// Métodos de comentarios
+const toggleComments = ref(async (postId) => {
+  if (visibleComments.value.has(postId)) {
+    visibleComments.value.delete(postId)
+  } else {
+    visibleComments.value.add(postId)
+    await loadComments(postId)
+  }
+})
+
+const loadComments = ref(async (postId) => {
+  try {
+    const { data, error } = await getPostComments(postId)
+    if (error) throw error
+    
+    postComments.value[postId] = data || []
+  } catch (error) {
+    console.error('Error cargando comentarios:', error)
+    showNotification(t('errorLoadingComments'), 'error')
+  }
+})
+
+const submitComment = ref(async (postId) => {
+  const content = newComments.value[postId]?.trim()
+  if (!content) return
+
+  try {
+    const parentId = replyingTo.value[postId]?.id || null
+    const { data, error } = await createComment(postId, content, parentId)
+    if (error) throw error
+
+    // Actualizar comentarios localmente
+    if (!postComments.value[postId]) {
+      postComments.value[postId] = []
+    }
+    postComments.value[postId].push(data)
+    
+    // Limpiar formulario
+    newComments.value[postId] = ''
+    if (replyingTo.value[postId]) {
+      delete replyingTo.value[postId]
+    }
+    
+    showNotification(t('commentAdded'), 'success')
+  } catch (error) {
+    console.error('Error agregando comentario:', error)
+    showNotification(t('errorAddingComment'), 'error')
+  }
+})
+
+const startReply = ref((postId, comment) => {
+  replyingTo.value[postId] = comment
+})
+
+const cancelReply = ref((postId) => {
+  delete replyingTo.value[postId]
+})
+
+// Métodos de utilidad
+const togglePostForm = ref(() => {
+  showPostForm.value = !showPostForm.value
+  if (!showPostForm.value) {
+    newPost.value = { title: '', content: '', location: '' }
+  }
+})
+
+const toggleUserMenu = ref(() => {
+  showUserMenu.value = !showUserMenu.value
+})
+
+const closeUserMenu = ref((event) => {
+  if (!event.target.closest('.user-menu')) {
+    showUserMenu.value = false
+  }
+})
+
+const clearSearch = ref(() => {
+  searchTerm.value = ''
+})
+
+const handleLogout = ref(async () => {
+  try {
+    await signOut()
+    router.push('/')
+  } catch (error) {
+    console.error('Error en logout:', error)
+  }
+})
+
+const formatDate = ref((dateString) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = now - date
+
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (minutes < 60) {
+    return `${minutes}m`
+  } else if (hours < 24) {
+    return `${hours}h`
+  } else {
+    return `${days}d`
+  }
+})
+
+const showNotification = ref((message, type = 'info') => {
+  const notification = document.createElement('div')
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    color: white;
+    background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#3b82f6'};
+    z-index: 1000;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease;
+  `
+
+  document.body.appendChild(notification)
+
+  setTimeout(() => {
+    notification.style.transform = 'translateX(100%)'
+    setTimeout(() => notification.remove(), 300)
+  }, 3000)
+})
+
+// Watch para aplicar tema
+watch(currentTheme, (newTheme) => {
+  document.documentElement.setAttribute('data-theme', newTheme)
+}, { immediate: true })
+
 onMounted(async () => {
-  await cargarPublicaciones()
-  await cargarCompañeros()
-  configurarWebSocket()
+  await initializeUser.value()
+  await loadPosts.value()
+  setupWebSocket.value()
+  
+  // Cerrar menú de usuario al hacer click fuera
+  document.addEventListener('click', closeUserMenu.value)
 })
 
 onUnmounted(() => {
   if (subscription.value) {
     subscription.value.unsubscribe()
   }
+  document.removeEventListener('click', closeUserMenu.value)
 })
-
-async function cargarPublicaciones() {
-  const { data, error } = await getPosts()
-  if (!error && data) {
-    publicaciones.value = data.map(post => ({
-      ...post,
-      fecha: formatearFecha(post.created_at),
-      comentarios: []
-    }))
-  }
-}
-
-async function cargarCompañeros() {
-  const { data, error } = await getCompanions(currentUserId.value)
-  if (!error && data) {
-    compañeros.value = data
-  }
-}
-
-function configurarWebSocket() {
-  subscription.value = subscribeToPostUpdates((payload) => {
-    if (payload.eventType === 'INSERT' && payload.table === 'posts') {
-      const nuevaPublicacion = {
-        ...payload.new,
-        fecha: formatearFecha(payload.new.created_at),
-        comentarios: []
-      }
-      publicaciones.value.unshift(nuevaPublicacion)
-
-      // Mostrar notificación
-      mostrarNotificacion('Nueva publicación disponible')
-    }
-  })
-}
-
-function onLocationSelected(location) {
-  nueva.value.ubicacion = location.address
-  nueva.value.coordenadas = { lat: location.lat, lng: location.lng }
-}
-
-async function agregarPublicacion() {
-  const publicacionData = {
-    titulo: nueva.value.titulo,
-    contenido: nueva.value.contenido,
-    ubicacion: nueva.value.ubicacion,
-    coordenadas: nueva.value.coordenadas,
-    autor: nueva.value.autor,
-    autor_id: currentUserId.value
-  }
-
-  const { data, error } = await addPost(publicacionData)
-
-  if (!error && data) {
-    const publicacionCompleta = {
-      ...data,
-      fecha: formatearFecha(data.created_at),
-      comentarios: []
-    }
-
-    publicaciones.value.unshift(publicacionCompleta)
-
-    // Limpiar formulario
-    nueva.value.titulo = ''
-    nueva.value.contenido = ''
-    nueva.value.ubicacion = ''
-    nueva.value.coordenadas = null
-    nuevaUbicacion.value = null
-    mostrarFormulario.value = false
-
-    mostrarNotificacion('Publicación creada exitosamente')
-  } else {
-    mostrarNotificacion('Error al crear la publicación', 'error')
-  }
-}
-
-async function manejarLike(postId, index) {
-  const { data, error } = await toggleLike(postId, currentUserId.value)
-
-  if (!error && data) {
-    const post = publicaciones.value[index]
-    if (data.liked) {
-      post.likes_count = (post.likes_count || 0) + 1
-    } else {
-      post.likes_count = Math.max((post.likes_count || 0) - 1, 0)
-    }
-    post.liked = data.liked
-  }
-}
-
-async function toggleComentarios(postId, index) {
-  comentariosVisibles.value[postId] = !comentariosVisibles.value[postId]
-
-  if (comentariosVisibles.value[postId] && !publicaciones.value[index].comentarios.length) {
-    const { data, error } = await getPostComments(postId)
-    if (!error && data) {
-      publicaciones.value[index].comentarios = data
-    }
-  }
-}
-
-async function agregarComentario(postId, index) {
-  const contenido = nuevoComentario.value[postId]
-  if (!contenido || !contenido.trim()) return
-
-  const comentarioData = {
-    post_id: postId,
-    content: contenido.trim(),
-    user_id: currentUserId.value
-  }
-
-  const { data, error } = await addComment(comentarioData)
-
-  if (!error && data) {
-    publicaciones.value[index].comentarios.push(data)
-    publicaciones.value[index].comments_count = (publicaciones.value[index].comments_count || 0) + 1
-    nuevoComentario.value[postId] = ''
-
-    mostrarNotificacion('Comentario agregado')
-  }
-}
-
-function toggleCompartir(postId) {
-  compartirVisible.value[postId] = !compartirVisible.value[postId]
-}
-
-async function compartirPost(postId) {
-  const companionIds = Object.keys(compañeros.value).filter(id =>
-    document.querySelector(`#companion-${id}`).checked
-  )
-
-  if (companionIds.length === 0) {
-    mostrarNotificacion('Selecciona al menos un compañero', 'warning')
-    return
-  }
-
-  const mensaje = mensajeCompartir.value[postId] || ''
-  const { error } = await sharePostWithCompanions(postId, companionIds, mensaje)
-
-  if (!error) {
-    compartirVisible.value[postId] = false
-    mensajeCompartir.value[postId] = ''
-
-    // Desmarcar checkboxes
-    companionIds.forEach(id => {
-      const checkbox = document.querySelector(`#companion-${id}`)
-      if (checkbox) checkbox.checked = false
-    })
-
-    mostrarNotificacion(`Post compartido con ${companionIds.length} compañero(s)`)
-  }
-}
-
-function limpiarBusqueda() {
-  busqueda.value = ''
-}
-
-function formatearFecha(fecha) {
-  const ahora = new Date()
-  const fechaPost = new Date(fecha)
-  const diferencia = ahora - fechaPost
-
-  const minutos = Math.floor(diferencia / (1000 * 60))
-  const horas = Math.floor(diferencia / (1000 * 60 * 60))
-  const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24))
-
-  if (minutos < 60) {
-    return `Hace ${minutos} minuto${minutos !== 1 ? 's' : ''}`
-  } else if (horas < 24) {
-    return `Hace ${horas} hora${horas !== 1 ? 's' : ''}`
-  } else {
-    return `Hace ${dias} día${dias !== 1 ? 's' : ''}`
-  }
-}
-
-function mostrarNotificacion(mensaje, tipo = 'success') {
-  const notificacion = document.createElement('div')
-  notificacion.className = `notification notification-${tipo} slide-in`
-  notificacion.innerHTML = `
-    <div class="notification-content">
-      <i class="fas ${tipo === 'success' ? 'fa-check-circle' : tipo === 'warning' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle'}"></i>
-      <span>${mensaje}</span>
-    </div>
-  `
-  
-  notificacion.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 20px;
-    border-radius: 12px;
-    color: white;
-    background: ${tipo === 'error' ? 'linear-gradient(135deg, #e74c3c, #c0392b)' : tipo === 'warning' ? 'linear-gradient(135deg, #f39c12, #e67e22)' : 'linear-gradient(135deg, #27ae60, #2ecc71)'};
-    z-index: 1000;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    min-width: 300px;
-    font-weight: 500;
-  `
-
-  document.body.appendChild(notificacion)
-
-  setTimeout(() => {
-    notificacion.style.transform = 'translateX(100%)'
-    notificacion.style.opacity = '0'
-    setTimeout(() => notificacion.remove(), 300)
-  }, 4000)
-}
 </script>
 
 <style scoped>
-.forum-layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--light-bg);
+/* Variables CSS para temas */
+:root {
+  --primary-green: #059669;
+  --primary-green-hover: #047857;
+  --primary-green-light: #d1fae5;
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --bg-primary: var(--white);
+  --bg-secondary: var(--gray-50);
+  --border-color: var(--gray-200);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* Sidebar moderna */
-.modern-sidebar {
-  width: var(--sidebar-width);
-  background: var(--sidebar-bg);
+[data-theme="dark"] {
+  --white: #1f2937;
+  --gray-50: #374151;
+  --gray-100: #4b5563;
+  --gray-200: #6b7280;
+  --gray-300: #9ca3af;
+  --gray-400: #d1d5db;
+  --gray-500: #e5e7eb;
+  --gray-600: #f3f4f6;
+  --gray-700: #f9fafb;
+  --gray-800: #ffffff;
+  --gray-900: #ffffff;
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-400);
+  --bg-primary: #1f2937;
+  --bg-secondary: #374151;
+  --border-color: #4b5563;
+}
+
+/* Layout principal */
+.forum-layout {
+  min-height: 100vh;
+  background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
-  position: fixed;
-  height: 100vh;
-  left: 0;
+}
+
+/* Header principal */
+.main-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
   top: 0;
-  z-index: 50;
-  box-shadow: var(--shadow-lg);
+  z-index: 100;
 }
 
-.sidebar-header {
-  padding: var(--space-6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 64px;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: space-between;
 }
 
-.sidebar-logo {
-  width: 40px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo {
   height: 40px;
-  border-radius: var(--border-radius);
+  width: auto;
 }
 
-.sidebar-title {
-  color: var(--white-text);
-  font-size: var(--text-xl);
+.header-title {
+  font-size: 1.5rem;
   font-weight: 700;
+  color: var(--primary-green);
   margin: 0;
 }
 
-.profile-card {
-  margin: var(--space-6);
-  padding: var(--space-5);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-lg);
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.language-selector .btn-language {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  transition: var(--transition-base);
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.profile-card:hover {
-  background: rgba(255, 255, 255, 0.15);
+.language-selector .btn-language:hover {
+  background: var(--primary-green-light);
+  color: var(--primary-green);
 }
 
-.profile-avatar {
-  font-size: 2.5rem;
-  color: var(--primary-color);
+.header-right {
+  display: flex;
+  align-items: center;
 }
 
-.profile-info {
-  flex: 1;
+/* Menú de usuario */
+.user-menu {
+  position: relative;
 }
 
-.profile-info h3 {
-  color: var(--white-text);
-  font-size: var(--text-base);
+.user-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-button:hover {
+  background: var(--bg-secondary);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
+}
+
+.user-name {
   font-weight: 600;
-  margin: 0 0 var(--space-1) 0;
+  color: var(--text-primary);
 }
 
-.profile-info p {
-  color: #bdc3c7;
-  font-size: var(--text-sm);
-  margin: 0;
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  min-width: 200px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
 }
 
-.profile-link {
-  color: #bdc3c7;
-  padding: var(--space-2);
-  border-radius: var(--border-radius);
-  transition: var(--transition-base);
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
 }
 
-.profile-link:hover {
-  color: var(--white-text);
-  background: rgba(255, 255, 255, 0.1);
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.dropdown-item.logout {
+  color: #ef4444;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.25rem 0;
+}
+
+/* Sidebar */
+.modern-sidebar {
+  width: 240px;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  position: fixed;
+  top: 64px;
+  left: 0;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  z-index: 50;
 }
 
 .sidebar-nav {
-  flex: 1;
-  padding: var(--space-4) 0;
-  overflow-y: auto;
+  padding: 1rem 0;
 }
 
 .nav-menu {
   list-style: none;
-  padding: 0;
   margin: 0;
-}
-
-.nav-menu li {
-  margin-bottom: var(--space-1);
+  padding: 0;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
-  color: #bdc3c7;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: var(--transition-base);
-  position: relative;
-  font-weight: 500;
-}
-
-.nav-link::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 60%;
-  background: var(--primary-color);
-  border-radius: 0 4px 4px 0;
-  transition: var(--transition-base);
+  transition: all 0.2s;
+  border-right: 3px solid transparent;
 }
 
 .nav-link:hover {
-  color: var(--white-text);
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateX(4px);
-}
-
-.nav-link:hover::before,
-.nav-link.active::before {
-  width: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .nav-link.active {
-  color: var(--white-text);
-  background: linear-gradient(135deg, rgba(22, 160, 133, 0.2), rgba(26, 188, 156, 0.1));
+  background: var(--primary-green-light);
+  color: var(--primary-green);
+  border-right-color: var(--primary-green);
+  font-weight: 600;
 }
 
 .nav-icon {
@@ -859,681 +1155,523 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
   justify-content: center;
 }
 
-.sidebar-footer {
-  padding: var(--space-6);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.stats-mini {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: #bdc3c7;
-  font-size: var(--text-sm);
-}
-
-.stat-item i {
-  color: var(--primary-color);
-  width: 16px;
-}
-
 /* Contenido principal */
 .forum-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
-  min-height: 100vh;
-}
-
-.forum-header {
-  background: var(--card-bg);
-  border-bottom: 1px solid var(--border-color);
-  padding: var(--space-8);
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  backdrop-filter: blur(10px);
-}
-
-.header-content {
+  margin-left: 240px;
+  padding: 2rem;
   max-width: 800px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-title h1 {
-  color: var(--dark-text);
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  margin: 0 0 var(--space-2) 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.header-title h1 i {
-  color: var(--primary-color);
-}
-
-.header-title p {
-  color: var(--light-text);
-  margin: 0;
-  font-size: var(--text-lg);
-}
-
-.new-post-btn {
-  padding: var(--space-4) var(--space-6);
-  font-size: var(--text-base);
-  font-weight: 600;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 260px;
+  padding-right: 20px;
 }
 
 /* Sección de búsqueda */
 .search-section {
-  padding: var(--space-6) var(--space-8);
-  background: var(--card-bg);
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2rem;
 }
 
 .search-container {
-  max-width: 800px;
-  margin: 0 auto;
+  position: relative;
 }
 
 .search-input-wrapper {
   position: relative;
-  margin-bottom: var(--space-4);
 }
 
 .search-icon {
   position: absolute;
-  left: var(--space-5);
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--light-text);
-  font-size: var(--text-lg);
+  color: var(--text-secondary);
 }
 
 .search-input {
   width: 100%;
-  padding: var(--space-4) var(--space-5) var(--space-4) 3.5rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  font-size: var(--text-base);
-  background: var(--card-bg);
-  transition: var(--transition-base);
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: all 0.2s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px var(--primary-green-light);
 }
 
 .clear-search-btn {
   position: absolute;
-  right: var(--space-4);
+  right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--light-text);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-2);
-  border-radius: var(--border-radius);
-  transition: var(--transition-base);
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .clear-search-btn:hover {
-  color: var(--error-color);
-  background: rgba(231, 76, 60, 0.1);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
-.search-filters {
-  display: flex;
-  gap: var(--space-3);
+/* Nueva publicación */
+.new-post-section {
+  margin-bottom: 2rem;
 }
 
-.filter-btn {
+.btn-new-post {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  background: var(--card-bg);
-  color: var(--light-text);
-  font-size: var(--text-sm);
-  font-weight: 500;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-green);
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
-.filter-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+.btn-new-post:hover {
+  background: var(--primary-green-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.filter-btn.active {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: var(--white-text);
+.btn-new-post.active {
+  background: var(--gray-500);
 }
 
-/* Formulario de nueva publicación */
 .new-post-form {
-  margin: var(--space-8);
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.post-form {
-  background: var(--card-bg);
-  border-radius: var(--border-radius-lg);
+  margin-top: 1rem;
+  background: var(--bg-primary);
+  border-radius: 12px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  border: 1px solid var(--border-color);
 }
 
 .form-header {
-  padding: var(--space-6);
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+.user-info {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 0.75rem;
 }
 
-.user-avatar {
-  font-size: 2.5rem;
-  color: var(--primary-color);
+.form-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.form-title h3 {
-  color: var(--dark-text);
-  font-size: var(--text-xl);
+.form-user-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
+}
+
+.form-username {
   font-weight: 600;
-  margin: 0 0 var(--space-1) 0;
-}
-
-.form-title p {
-  color: var(--light-text);
-  margin: 0;
-  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
 .form-body {
-  padding: var(--space-6);
+  padding: 1.5rem;
 }
 
-.form-group {
-  margin-bottom: var(--space-6);
+.title-input,
+.content-textarea,
+.location-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  margin-bottom: 1rem;
+}
+
+.title-input:focus,
+.content-textarea:focus,
+.location-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px var(--primary-green-light);
 }
 
 .title-input {
-  width: 100%;
-  padding: var(--space-4);
-  border: none;
-  font-size: var(--text-xl);
   font-weight: 600;
-  background: transparent;
-  color: var(--dark-text);
-  resize: none;
-}
-
-.title-input:focus {
-  outline: none;
-}
-
-.title-input::placeholder {
-  color: var(--light-text);
-  font-weight: 400;
+  font-size: 1.125rem;
 }
 
 .content-textarea {
-  width: 100%;
-  padding: var(--space-4);
-  border: none;
-  font-size: var(--text-base);
-  background: transparent;
-  color: var(--dark-text);
   resize: vertical;
-  min-height: 120px;
-  line-height: 1.6;
-}
-
-.content-textarea:focus {
-  outline: none;
-}
-
-.content-textarea::placeholder {
-  color: var(--light-text);
+  min-height: 100px;
+  font-family: inherit;
 }
 
 .location-input-wrapper {
   position: relative;
-  margin-bottom: var(--space-4);
 }
 
 .location-icon {
   position: absolute;
-  left: var(--space-4);
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--primary-color);
+  color: var(--primary-green);
+  z-index: 10;
 }
 
 .location-input {
-  width: 100%;
-  padding: var(--space-4) var(--space-4) var(--space-4) 2.5rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  font-size: var(--text-base);
-  background: var(--card-bg);
-  transition: var(--transition-base);
-}
-
-.location-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
+  padding-left: 2.5rem;
 }
 
 .form-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--border-color);
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
-.post-options {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.option-btn {
-  display: flex;
+.btn {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: var(--border-radius);
-  background: transparent;
-  color: var(--light-text);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.option-btn:hover {
-  color: var(--primary-color);
-  background: rgba(22, 160, 133, 0.1);
-}
-
-.submit-btn {
-  padding: var(--space-4) var(--space-6);
+  border-radius: 8px;
   font-weight: 600;
-  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
 }
 
-/* Lista de publicaciones */
-.posts-container {
-  padding: var(--space-8);
-  max-width: 800px;
-  margin: 0 auto;
+.btn-primary {
+  background: var(--primary-green);
+  color: var(--white);
 }
 
-.no-results {
-  background: var(--card-bg);
-  border-radius: var(--border-radius-lg);
-  padding: var(--space-12);
-  text-align: center;
-  box-shadow: var(--shadow-sm);
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-green-hover);
+}
+
+.btn-primary:disabled {
+  background: var(--gray-300);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
-.no-results-content {
-  max-width: 400px;
-  margin: 0 auto;
+.btn-outline:hover {
+  background: var(--bg-secondary);
 }
 
-.no-results-icon {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+/* Estados de carga */
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-green);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto var(--space-6);
-  color: var(--white-text);
-  font-size: var(--text-2xl);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
 }
 
-.no-results h3 {
-  color: var(--dark-text);
-  font-size: var(--text-2xl);
-  font-weight: 600;
-  margin-bottom: var(--space-4);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.no-results p {
-  color: var(--light-text);
-  margin-bottom: var(--space-6);
+.no-posts {
+  text-align: center;
+  padding: 3rem;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.no-posts-icon {
+  font-size: 3rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.no-posts h3 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.no-posts p {
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
-/* Tarjetas de publicaciones */
+/* Publicaciones */
+.posts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .post-card {
-  background: var(--card-bg);
-  border-radius: var(--border-radius-lg);
+  background: var(--bg-primary);
+  border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
-  margin-bottom: var(--space-6);
   overflow: hidden;
-  transition: var(--transition-base);
+  transition: all 0.2s;
 }
 
 .post-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .post-header {
-  padding: var(--space-6);
+  padding: 1.5rem;
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
 }
 
 .post-author {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 0.75rem;
+  flex: 1;
 }
 
 .author-avatar {
-  font-size: 2.5rem;
-  color: var(--primary-color);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.author-avatar-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
+  font-size: 1.25rem;
 }
 
 .author-info h4 {
-  color: var(--dark-text);
-  font-size: var(--text-lg);
   font-weight: 600;
-  margin: 0 0 var(--space-2) 0;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
 }
 
 .post-meta {
   display: flex;
-  gap: var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--light-text);
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .post-meta span {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 0.25rem;
 }
 
 .post-menu {
-  position: relative;
+  display: flex;
+  gap: 0.5rem;
 }
 
-.menu-btn {
-  background: none;
+.post-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   border: none;
-  color: var(--light-text);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-2);
-  border-radius: var(--border-radius);
-  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.menu-btn:hover {
-  color: var(--dark-text);
-  background: var(--border-color);
+.post-action-btn:hover {
+  background: var(--primary-green-light);
+  color: var(--primary-green);
+}
+
+.post-action-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .post-content {
-  padding: 0 var(--space-6) var(--space-6);
+  padding: 0 1.5rem 1.5rem;
 }
 
 .post-title {
-  color: var(--dark-text);
-  font-size: var(--text-xl);
-  font-weight: 600;
-  margin-bottom: var(--space-4);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
   line-height: 1.4;
 }
 
 .post-text {
-  color: var(--light-text);
-  line-height: 1.7;
+  color: var(--text-secondary);
+  line-height: 1.6;
   margin: 0;
 }
 
 .post-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-6);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
-  background: rgba(248, 250, 252, 0.5);
+  background: var(--bg-secondary);
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: none;
-  border-radius: var(--border-radius);
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
   background: transparent;
-  color: var(--light-text);
-  font-size: var(--text-sm);
-  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: all 0.2s;
+  font-size: 0.875rem;
 }
 
 .action-btn:hover {
-  background: rgba(22, 160, 133, 0.1);
-  color: var(--primary-color);
+  background: var(--bg-primary);
+  border-color: var(--primary-green);
+  color: var(--primary-green);
 }
 
-.like-btn.liked {
-  color: var(--error-color);
+.action-btn.liked {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
-.like-btn.liked:hover {
-  color: var(--error-color);
-  background: rgba(231, 76, 60, 0.1);
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.bookmark-btn {
-  margin-left: auto;
-}
-
-/* Panel de compartir */
-.share-panel {
-  padding: var(--space-6);
-  border-top: 1px solid var(--border-color);
-  background: var(--light-bg);
-}
-
-.share-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-6);
-}
-
-.share-header h4 {
-  color: var(--dark-text);
-  font-size: var(--text-lg);
-  font-weight: 600;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--light-text);
-  cursor: pointer;
-  padding: var(--space-2);
-  border-radius: var(--border-radius);
-  transition: var(--transition-base);
-}
-
-.close-btn:hover {
-  color: var(--error-color);
-  background: rgba(231, 76, 60, 0.1);
-}
-
-.companions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-}
-
-.companion-card {
-  position: relative;
-}
-
-.companion-checkbox {
-  display: none;
-}
-
-.companion-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition-base);
-  background: var(--card-bg);
-}
-
-.companion-label:hover {
-  border-color: var(--primary-color);
-  background: rgba(22, 160, 133, 0.05);
-}
-
-.companion-checkbox:checked + .companion-label {
-  border-color: var(--primary-color);
-  background: rgba(22, 160, 133, 0.1);
-  color: var(--primary-color);
-}
-
-.companion-avatar {
-  width: 40px;
-  height: 40px;
-  background: var(--border-color);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--light-text);
-}
-
-.companion-checkbox:checked + .companion-label .companion-avatar {
-  background: var(--primary-color);
-  color: var(--white-text);
-}
-
-.share-message {
-  margin-bottom: var(--space-6);
-}
-
-.message-input {
-  width: 100%;
-  padding: var(--space-4);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  font-size: var(--text-base);
-  background: var(--card-bg);
-  resize: vertical;
-  transition: var(--transition-base);
-}
-
-.message-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
-}
-
-.share-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* Sección de comentarios */
+/* Comentarios */
 .comments-section {
   border-top: 1px solid var(--border-color);
-  background: var(--light-bg);
+  background: var(--bg-secondary);
 }
 
 .comments-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .comments-header h4 {
-  color: var(--dark-text);
-  font-size: var(--text-lg);
   font-weight: 600;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .close-comments-btn {
-  background: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: none;
-  color: var(--light-text);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-2);
-  border-radius: var(--border-radius);
-  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .close-comments-btn:hover {
-  color: var(--error-color);
-  background: rgba(231, 76, 60, 0.1);
+  color: var(--text-primary);
 }
 
 .comments-list {
-  padding: 0 var(--space-6);
   max-height: 400px;
   overflow-y: auto;
+  padding: 1rem 1.5rem;
 }
 
 .comment-item {
   display: flex;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-left: 0;
+}
+
+.comment-item.is-reply {
+  margin-left: 2rem;
+  margin-top: 1rem;
 }
 
 .comment-avatar {
-  font-size: 2rem;
-  color: var(--primary-color);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
   flex-shrink: 0;
 }
 
@@ -1544,226 +1682,388 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
 .comment-header {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-2);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .comment-header h5 {
-  color: var(--dark-text);
-  font-size: var(--text-base);
   font-weight: 600;
+  color: var(--text-primary);
   margin: 0;
+  font-size: 0.875rem;
 }
 
 .comment-date {
-  color: var(--light-text);
-  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
 }
 
-.comment-content p {
-  color: var(--light-text);
-  margin-bottom: var(--space-3);
-  line-height: 1.6;
+.comment-reply-to {
+  font-size: 0.875rem;
+  color: var(--primary-green);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.comment-text {
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0 0 0.5rem 0;
 }
 
 .comment-actions {
   display: flex;
-  gap: var(--space-4);
+  gap: 1rem;
 }
 
 .comment-action-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 0.25rem;
   background: none;
   border: none;
-  color: var(--light-text);
-  font-size: var(--text-sm);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-1) 0;
-  transition: var(--transition-base);
+  font-size: 0.75rem;
+  padding: 0.25rem 0;
+  transition: all 0.2s;
 }
 
 .comment-action-btn:hover {
-  color: var(--primary-color);
+  color: var(--primary-green);
 }
 
 .comment-form {
-  padding: var(--space-6);
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
 .comment-input-wrapper {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  background: var(--card-bg);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--space-3);
-  transition: var(--transition-base);
-}
-
-.comment-input-wrapper:focus-within {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .comment-user-avatar {
-  font-size: 1.8rem;
-  color: var(--primary-color);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
-.comment-input {
+.comment-user-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
+  flex-shrink: 0;
+}
+
+.comment-input-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.reply-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--primary-green-light);
+  color: var(--primary-green);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.875rem;
+  margin-bottom: -1px;
+}
+
+.cancel-reply-btn {
+  background: none;
   border: none;
-  background: transparent;
-  font-size: var(--text-base);
-  color: var(--dark-text);
-  padding: var(--space-2) 0;
+  color: var(--primary-green);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.cancel-reply-btn:hover {
+  background: rgba(5, 150, 105, 0.2);
+}
+
+.comment-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  resize: none;
+  transition: all 0.2s;
 }
 
 .comment-input:focus {
   outline: none;
-}
-
-.comment-input::placeholder {
-  color: var(--light-text);
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px var(--primary-green-light);
 }
 
 .comment-submit-btn {
-  background: var(--primary-color);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: none;
-  color: var(--white-text);
-  padding: var(--space-3);
-  border-radius: var(--border-radius);
+  background: var(--primary-green);
+  color: var(--white);
   cursor: pointer;
-  transition: var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
-.comment-submit-btn:hover {
-  background: var(--primary-hover);
-  transform: scale(1.05);
+.comment-submit-btn:hover:not(:disabled) {
+  background: var(--primary-green-hover);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .modern-sidebar {
-    transform: translateX(-100%);
-    transition: transform var(--transition-base);
-  }
-
-  .modern-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .forum-main {
-    margin-left: 0;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: var(--space-4);
-    align-items: flex-start;
-  }
-
-  .search-filters {
-    flex-wrap: wrap;
-  }
+.comment-submit-btn:disabled {
+  background: var(--gray-300);
+  cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .forum-header,
-  .search-section,
-  .posts-container,
-  .new-post-form {
-    padding-left: var(--space-4);
-    padding-right: var(--space-4);
-  }
-
-  .post-card {
-    border-radius: var(--border-radius);
-  }
-
-  .post-header {
-    padding: var(--space-4);
-  }
-
-  .post-content {
-    padding: 0 var(--space-4) var(--space-4);
-  }
-
-  .post-actions {
-    padding: var(--space-3) var(--space-4);
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .action-btn {
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--text-xs);
-  }
-
-  .companions-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .comment-item {
-    gap: var(--space-3);
-  }
-
-  .comment-avatar {
-    font-size: 1.5rem;
-  }
+/* Modal de edición */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 }
 
-/* Animaciones y transiciones */
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.close-modal-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-modal-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.edit-form {
+  padding: 1.5rem;
+}
+
+.edit-title-input,
+.edit-content-textarea,
+.edit-location-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  margin-bottom: 1rem;
+}
+
+.edit-title-input:focus,
+.edit-content-textarea:focus,
+.edit-location-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px var(--primary-green-light);
+}
+
+.edit-title-input {
+  font-weight: 600;
+}
+
+.edit-content-textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+/* Animaciones */
 .fade-in {
-  animation: fadeIn 0.6s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .slide-in {
   animation: slideIn 0.3s ease-out;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .modern-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .forum-main {
+    margin-left: 0;
+    padding-left: 2rem;
+  }
+
+  .header-container {
+    padding: 0 1rem;
+  }
+
+  .header-title {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .forum-main {
+    padding: 1rem;
+    padding-left: 1rem;
+  }
+
+  .header-container {
+    padding: 0 0.5rem;
+  }
+
+  .header-center {
+    display: none;
+  }
+
+  .post-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .post-menu {
+    align-self: flex-end;
+  }
+
+  .post-actions {
+    flex-wrap: wrap;
+  }
+
+  .comment-item.is-reply {
+    margin-left: 1rem;
+  }
+
+  .comment-input-wrapper {
+    align-items: flex-end;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+}
+
 /* Notificaciones */
 .notification {
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-xl);
-  animation: slideIn 0.3s ease-out;
-  backdrop-filter: blur(10px);
+  font-weight: 500;
+  border-radius: 8px;
+  animation: slideInRight 0.3s ease-out;
 }
 
-.notification-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.notification-content i {
-  font-size: var(--text-lg);
-}
-
-/* Scrollbar personalizada para comentarios */
-.comments-list::-webkit-scrollbar {
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
   width: 6px;
 }
 
-.comments-list::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
   background: var(--border-color);
   border-radius: 3px;
 }
 
-.comments-list::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 3px;
-}
-
-.comments-list::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-hover);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 </style>
