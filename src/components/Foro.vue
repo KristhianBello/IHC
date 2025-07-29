@@ -10,7 +10,7 @@
         
         <div class="header-center">
           <div class="language-selector">
-            <button @click="toggleLanguage" class="btn-language">
+            <button @click="toggleLanguage" class="btn-language btn-with-icon">
               <i class="fas fa-globe"></i>
               {{ currentLanguage === 'es' ? 'ES' : 'EN' }}
             </button>
@@ -19,7 +19,7 @@
 
         <div class="header-right">
           <div class="user-menu">
-            <button @click="toggleUserMenu" class="user-button">
+            <button @click="toggleUserMenu" class="user-button btn-with-icon">
               <img 
                 v-if="userProfile?.avatar_url" 
                 :src="userProfile.avatar_url" 
@@ -34,16 +34,16 @@
             </button>
             
             <div v-if="showUserMenu" class="user-dropdown">
-              <router-link to="/perfil" class="dropdown-item">
+              <router-link to="/perfil" class="dropdown-item btn-with-icon">
                 <i class="fas fa-user-cog"></i>
                 {{ t('editProfile') }}
               </router-link>
-              <button @click="toggleTheme" class="dropdown-item">
+              <button @click="toggleTheme" class="dropdown-item btn-with-icon">
                 <i :class="currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
                 {{ currentTheme === 'dark' ? t('lightMode') : t('darkMode') }}
               </button>
               <div class="dropdown-divider"></div>
-              <button @click="handleLogout" class="dropdown-item logout">
+              <button @click="handleLogout" class="dropdown-item logout btn-with-icon">
                 <i class="fas fa-sign-out-alt"></i>
                 {{ t('logout') }}
               </button>
@@ -58,64 +58,64 @@
       <nav class="sidebar-nav">
         <ul class="nav-menu">
           <li>
-            <router-link to="/foro" class="nav-link active">
-              <div class="nav-icon">
+            <router-link to="/foro" class="nav-link active btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-home"></i>
               </div>
               <span>{{ t('home') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/mapa" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/mapa" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-map-marked-alt"></i>
               </div>
               <span>{{ t('spaceMap') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/galeria" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/galeria" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-images"></i>
               </div>
               <span>{{ t('gallery') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/adopciones" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/adopciones" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-seedling"></i>
               </div>
               <span>{{ t('myAdoptions') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/solicitud" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/solicitud" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-hand-holding-heart"></i>
               </div>
               <span>{{ t('requestAdoption') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/reportar" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/reportar" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-exclamation-triangle"></i>
               </div>
               <span>{{ t('reportProblem') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/programar-tareas" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/programar-tareas" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-calendar-plus"></i>
               </div>
               <span>{{ t('scheduleTasks') }}</span>
             </router-link>
           </li>
           <li>
-            <router-link to="/compañeros" class="nav-link">
-              <div class="nav-icon">
+            <router-link to="/compañeros" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-users"></i>
               </div>
               <span>{{ t('myCompanions') }}</span>
@@ -129,27 +129,32 @@
     <main class="forum-main">
       <!-- Sección de búsqueda -->
       <div class="search-section">
-        <div class="search-container">
-          <div class="search-input-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input
-              type="text"
-              v-model="searchTerm"
-              :placeholder="t('searchPlaceholder')"
-              class="search-input"
-            />
-            <button v-if="searchTerm" @click="clearSearch" class="clear-search-btn">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+  <div class="search-container">
+    <div class="search-input-wrapper relative">
+      <i class="fas fa-search search-icon absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+      <input
+        type="text"
+        v-model="searchTerm"
+        :placeholder="t('searchPlaceholder')"
+        class="search-input pl-10"
+      />
+      <button 
+        v-if="searchTerm" 
+        @click="clearSearch" 
+        class="clear-search-btn absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
 
       <!-- Formulario de nueva publicación -->
       <div class="new-post-section">
         <button 
           @click="togglePostForm" 
-          class="btn-new-post"
+          class="btn-new-post btn-with-icon"
           :class="{ active: showPostForm }"
         >
           <i :class="showPostForm ? 'fas fa-times' : 'fas fa-plus'"></i>
@@ -201,7 +206,7 @@
               </div>
 
               <div class="form-actions">
-                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+                <button type="submit" class="btn btn-primary btn-with-icon" :disabled="isSubmitting">
                   <i class="fas fa-paper-plane"></i>
                   {{ isSubmitting ? t('publishing') : t('publish') }}
                 </button>
@@ -285,7 +290,7 @@
           <div class="post-actions">
             <button
               @click="handleLike(post.id)"
-              class="action-btn like-btn"
+              class="action-btn like-btn btn-with-icon"
               :class="{ liked: post.user_liked }"
               :disabled="likingPosts.has(post.id)"
             >
@@ -295,7 +300,7 @@
             
             <button
               @click="toggleComments(post.id)"
-              class="action-btn comment-btn"
+              class="action-btn comment-btn btn-with-icon"
             >
               <i class="fas fa-comment"></i>
               <span>{{ post.comments_count || 0 }}</span>
@@ -343,7 +348,7 @@
                   <div class="comment-actions">
                     <button 
                       @click="startReply(post.id, comment)"
-                      class="comment-action-btn"
+                      class="comment-action-btn btn-with-icon"
                     >
                       <i class="fas fa-reply"></i>
                       {{ t('reply') }}
@@ -437,10 +442,11 @@
         />
         
         <div class="modal-actions">
-          <button type="button" @click="cancelEdit" class="btn btn-outline">
+          <button type="button" @click="cancelEdit" class="btn btn-outline btn-with-icon">
             {{ t('cancel') }}
           </button>
-          <button type="submit" class="btn btn-primary" :disabled="isUpdating">
+          <button type="submit" class="btn btn-primary btn-with-icon" :disabled="isUpdating">
+            <i class="fas fa-save"></i>
             {{ isUpdating ? t('updating') : t('update') }}
           </button>
         </div>
@@ -1150,9 +1156,19 @@ onUnmounted(() => {
 }
 
 .nav-icon {
-  width: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
+  align-items: center;
   justify-content: center;
+  font-size: 1rem;
+  color: inherit;
+  transition: all 0.2s;
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  transform: scale(1.1);
 }
 
 /* Contenido principal */
@@ -1176,16 +1192,33 @@ onUnmounted(() => {
   position: relative;
 }
 
+
 .search-input-wrapper {
   position: relative;
 }
 
+.search-input {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 2.5rem; /* derecha-izquierda para íconos */
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  transition: 0.2s;
+}
+
 .search-icon {
   position: absolute;
-  left: 1rem;
-  top: 50%;
+  right: 0.50rem;
+  top: 40%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  font-size: large;
+  transform: translate3d(0, -50%, 0);
+  color: #999;
+}
+
+.clear-search-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .search-input {
@@ -1217,11 +1250,18 @@ onUnmounted(() => {
   padding: 0.25rem;
   border-radius: 4px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .clear-search-btn:hover {
   color: var(--text-primary);
   background: var(--bg-secondary);
+}
+
+.clear-search-btn i {
+  font-size: 1rem;
 }
 
 /* Nueva publicación */
@@ -1252,6 +1292,14 @@ onUnmounted(() => {
 
 .btn-new-post.active {
   background: var(--gray-500);
+}
+
+.btn-new-post i {
+  transition: transform 0.2s;
+}
+
+.btn-new-post:hover i {
+  transform: scale(1.1);
 }
 
 .new-post-form {
@@ -1339,11 +1387,17 @@ onUnmounted(() => {
 
 .location-icon {
   position: absolute;
-  left: 0.75rem;
-  top: 50%;
+  right: 0.75rem;
+  top: 40%;
   transform: translateY(-50%);
   color: var(--primary-green);
+  font-size: 1.5rem;
   z-index: 10;
+  opacity: 0.8;
+}
+
+.location-input:focus ~ .location-icon {
+  opacity: 1;
 }
 
 .location-input {
@@ -1512,6 +1566,10 @@ onUnmounted(() => {
   gap: 0.25rem;
 }
 
+.post-meta i {
+  font-size: 0.9rem;
+}
+
 .post-menu {
   display: flex;
   gap: 0.5rem;
@@ -1580,6 +1638,15 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.875rem;
+}
+
+.action-btn i {
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.action-btn:hover i {
+  transform: scale(1.1);
 }
 
 .action-btn:hover {
@@ -1727,6 +1794,16 @@ onUnmounted(() => {
   font-size: 0.75rem;
   padding: 0.25rem 0;
   transition: all 0.2s;
+}
+
+.comment-action-btn i {
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+  transition: all 0.2s;
+}
+
+.comment-action-btn:hover i {
+  transform: scale(1.1);
 }
 
 .comment-action-btn:hover {
@@ -1936,6 +2013,38 @@ onUnmounted(() => {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1.5rem;
+}
+
+/* Clases utilitarias para iconos */
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-with-icon i {
+  transition: transform 0.2s;
+}
+
+.btn-with-icon:hover i {
+  transform: translateX(2px);
+}
+
+.icon-hover-animate:hover i {
+  animation: iconPulse 0.5s ease;
+}
+
+@keyframes iconPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Asegurar consistencia en todos los iconos */
+i[class^="fas"] {
+  vertical-align: middle;
+  line-height: 1;
 }
 
 /* Animaciones */
