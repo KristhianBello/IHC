@@ -107,6 +107,14 @@
             </router-link>
           </li>
           <li>
+            <router-link to="/sugerencias" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <span>{{ t('suggestions') }}</span>
+            </router-link>
+          </li>
+          <li>
             <router-link to="/programar-tareas" class="nav-link btn-with-icon">
               <div class="nav-icon icon-hover-animate">
                 <i class="fas fa-calendar-plus"></i>
@@ -478,6 +486,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MapSelector from './MapSelector.vue'
+
 import {
   createPost,
   getPosts,
