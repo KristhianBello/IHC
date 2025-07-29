@@ -144,7 +144,7 @@ let postsDatabase = [
 // Simulación de createPost
 export const createPost = async (postData) => {
   console.log('Simulando createPost:', postData)
-  
+
   const newPost = {
     id: Date.now(),
     title: postData.titulo,      // Mapear titulo a title
@@ -281,13 +281,13 @@ export const getPosts = async () => {
 
 export const deletePost = async (postId) => {
   console.log('Simulando eliminar post:', postId)
-  
+
   // Eliminar del almacén en memoria
   const index = postsDatabase.findIndex(post => post.id === postId)
   if (index !== -1) {
     postsDatabase.splice(index, 1)
   }
-  
+
   return { error: null }
 }
 
