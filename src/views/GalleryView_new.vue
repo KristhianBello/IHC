@@ -63,7 +63,7 @@
           @click="openImageModal(image)"
         >
           <div class="image-container">
-            <img :src="image.url" :alt="image.title || 'Item'" />
+            <img :src="image.url" :alt="image.description" />
             <div class="image-overlay">
               <div class="image-actions">
                 <button @click.stop="downloadImage(image)" class="action-btn">
@@ -112,7 +112,7 @@
         </button>
 
         <div class="modal-image">
-          <img :src="selectedImage.url" :alt="selectedImage.title || 'Content'" />
+          <img :src="selectedImage.url" :alt="selectedImage.description" />
         </div>
 
         <div class="modal-info">

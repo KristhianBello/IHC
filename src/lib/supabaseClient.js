@@ -125,7 +125,19 @@ export const createPost = async (postData) => {
 
 // Simulación de updatePost
 export const updatePostAPI = async (postId, postData) => {
-  console.log('Simulando updatePost:', postId, postData)
+  console.log('Actualizando publicación:', postId, postData)
+
+  // Verificar que la publicación pueda editarse (menos de 1 minuto)
+  const editTimeLimit = new Date(Date.now() - 60000) // 1 minuto atrás
+  const postCreatedAt = new Date(postData.created_at || new Date())
+
+  if (postCreatedAt < editTimeLimit) {
+    return {
+      data: null,
+      error: { message: 'No puedes editar esta publicación después de 1 minuto' }
+    }
+  }
+
   return {
     data: {
       id: postId,
@@ -168,70 +180,34 @@ export const signOut = async () => {
 
 // Funciones para publicaciones del foro
 export const addPost = async (postData) => {
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .insert([{
-        titulo: postData.titulo,
-        contenido: postData.contenido,
-        ubicacion: postData.ubicacion,
-        coordenadas: postData.coordenadas,
-        autor_id: postData.autor_id || 'user_simulado',
-        created_at: new Date().toISOString()
-      }])
-      .select()
+  console.log('Creando publicación:', postData)
 
-    if (error) throw error
-    return { data: data[0], error: null }
-  } catch {
-    console.log('Simulando agregar post:', postData)
-    return {
-      data: {
-        id: Date.now(),
-        ...postData,
-        likes_count: 0,
-        comments_count: 0,
-        created_at: new Date().toISOString(),
-        autor: postData.autor || 'Usuario Actual'
-      },
-      error: null
-    }
+  // Simular guardado en base de datos
+  const newPost = {
+    id: Date.now(),
+    titulo: postData.titulo,
+    contenido: postData.contenido,
+    ubicacion: postData.ubicacion,
+    coordenadas: postData.coordenadas,
+    autor_id: 'user_simulado',
+    autor: 'Usuario Actual',
+    likes_count: 0,
+    comments_count: 0,
+    created_at: new Date().toISOString(),
+    can_edit: true, // Puede editar por 1 minuto
+    edit_time_limit: new Date(Date.now() + 60000).toISOString() // 1 minuto para editar
   }
+
+  return { data: newPost, error: null }
 }
 
 export const getPosts = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles:autor_id (username, avatar_url),
-        likes:post_likes (count),
-        comments:post_comments (count)
-      `)
-      .order('created_at', { ascending: false })
+  console.log('Obteniendo publicaciones desde la base de datos')
 
-    if (error) throw error
-    return { data, error: null }
-  } catch {
-    console.log('Simulando obtener posts')
-    return {
-      data: [
-        {
-          id: 1,
-          titulo: 'Limpieza en el Parque Central',
-          contenido: 'Este fin de semana organizamos una jornada de limpieza en el Parque Central. Logramos recoger más de 20 bolsas de basura y podar los arbustos. ¡Gracias a todos los voluntarios!',
-          ubicacion: 'Parque Central, Sector Norte',
-          coordenadas: { lat: -2.1499, lng: -79.9663 },
-          autor_id: 'user_simulado',
-          autor: 'María González',
-          likes_count: 24,
-          comments_count: 3,
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ],
-      error: null
-    }
+  // En lugar de datos simulados, retornar array vacío para empezar limpio
+  return {
+    data: [],
+    error: null
   }
 }
 
@@ -250,57 +226,35 @@ export const deletePost = async (postId) => {
   }
 }
 
-// Funciones para likes
-// Verifica si el usuario ha dado like a un post
-export const checkUserLike = async (postId, userId = 'user_simulado') => {
-  try {
-    const { data, error } = await supabase
-      .from('post_likes')
-      .select('id')
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-      .single()
+// Funciones para likes - mejoradas para un like por usuario
+const userLikes = new Map() // Simulación de likes por usuario
 
-    if (error && error.code !== 'PGRST116') throw error
-    return { data: { liked: !!data }, error: null }
-  } catch {
-    // Simulación: aleatorio para demo
-    console.log('Simulando checkUserLike:', postId, userId)
-    return { data: { liked: Math.random() > 0.5 }, error: null }
+export const checkUserLike = async (postId, userId = 'user_simulado') => {
+  console.log('Verificando like del usuario:', postId, userId)
+
+  const likeKey = `${userId}_${postId}`
+  const hasLiked = userLikes.has(likeKey)
+
+  return {
+    data: { liked: hasLiked },
+    error: null
   }
 }
-export const toggleLike = async (postId, userId) => {
-  try {
-    // Verificar si ya existe el like
-    const { data: existingLike } = await supabase
-      .from('post_likes')
-      .select('id')
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-      .single()
 
-    if (existingLike) {
-      // Eliminar like
-      const { error } = await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', userId)
+export const toggleLike = async (postId, userId = 'user_simulado') => {
+  console.log('Toggle like:', postId, userId)
 
-      if (error) throw error
-      return { data: { liked: false }, error: null }
-    } else {
-      // Agregar like
-      const { error } = await supabase
-        .from('post_likes')
-        .insert([{ post_id: postId, user_id: userId }])
+  const likeKey = `${userId}_${postId}`
+  const hasLiked = userLikes.has(likeKey)
 
-      if (error) throw error
-      return { data: { liked: true }, error: null }
-    }
-  } catch {
-    console.log('Simulando toggle like:', postId, userId)
-    return { data: { liked: Math.random() > 0.5 }, error: null }
+  if (hasLiked) {
+    // Eliminar like
+    userLikes.delete(likeKey)
+    return { data: { liked: false }, error: null }
+  } else {
+    // Agregar like
+    userLikes.set(likeKey, true)
+    return { data: { liked: true }, error: null }
   }
 }
 
@@ -319,72 +273,60 @@ export const getPostLikes = async (postId) => {
   }
 }
 
-// Funciones para comentarios
-// Alias para compatibilidad con Foro.vue
+// Funciones para comentarios - mejoradas con WebSocket simulation
+const commentsStorage = new Map() // Simulación de comentarios
+const webSocketSubscribers = new Set() // Lista de suscriptores
+
+// Función para notificar cambios a suscriptores
+const notifyWebSocketSubscribers = (payload) => {
+  webSocketSubscribers.forEach(callback => {
+    try {
+      callback(payload)
+    } catch (error) {
+      console.error('Error notificando suscriptor:', error)
+    }
+  })
+}
+
+export const addComment = async (commentData) => {
+  console.log('Agregando comentario:', commentData)
+
+  const newComment = {
+    id: Date.now(),
+    post_id: commentData.post_id,
+    content: commentData.content,
+    user_id: commentData.user_id || 'user_simulado',
+    parent_id: commentData.parent_id || null,
+    autor: 'Usuario Actual',
+    created_at: new Date().toISOString()
+  }
+
+  // Almacenar en simulación
+  const postComments = commentsStorage.get(commentData.post_id) || []
+  postComments.push(newComment)
+  commentsStorage.set(commentData.post_id, postComments)
+
+  // Notificar a los suscriptores de WebSocket
+  notifyWebSocketSubscribers({
+    eventType: 'INSERT',
+    table: 'post_comments',
+    new: newComment
+  })
+
+  return { data: newComment, error: null }
+}
+
+export const getPostComments = async (postId) => {
+  console.log('Obteniendo comentarios del post:', postId)
+
+  const comments = commentsStorage.get(postId) || []
+  return { data: comments, error: null }
+}
+
 // Función única compatible con Foro.vue
 export const createComment = async (postId, content, parentId = null) => {
   // Simulación: el usuario es 'user_simulado'
   return await addComment({ post_id: postId, content, user_id: 'user_simulado', parent_id: parentId })
-}
-export const addComment = async (commentData) => {
-  try {
-    const { data, error } = await supabase
-      .from('post_comments')
-      .insert([{
-        post_id: commentData.post_id,
-        content: commentData.content,
-        user_id: commentData.user_id || 'user_simulado',
-        created_at: new Date().toISOString()
-      }])
-      .select(`
-        *,
-        profiles:user_id (username, avatar_url)
-      `)
-
-    if (error) throw error
-    return { data: data[0], error: null }
-  } catch {
-    console.log('Simulando agregar comentario:', commentData)
-    return {
-      data: {
-        id: Date.now(),
-        ...commentData,
-        autor: 'Usuario Actual',
-        created_at: new Date().toISOString()
-      },
-      error: null
-    }
-  }
-}
-
-export const getPostComments = async (postId) => {
-  try {
-    const { data, error } = await supabase
-      .from('post_comments')
-      .select(`
-        *,
-        profiles:user_id (username, avatar_url)
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    return { data, error: null }
-  } catch {
-    console.log('Simulando obtener comentarios del post:', postId)
-    return {
-      data: [
-        {
-          id: 1,
-          content: '¡Excelente trabajo! Me encantaría unirme a la próxima jornada.',
-          user_id: 'user_2',
-          autor: 'Carlos Mendoza',
-          created_at: new Date().toISOString()
-        }
-      ],
-      error: null
-    }
-  }
 }
 
 // ==================== FUNCIONES DE COMPAÑEROS ====================
@@ -469,59 +411,35 @@ export const sharePostWithCompanions = async (postId, companionIds, message = ''
 // ==================== WEBSOCKETS ====================
 
 export const subscribeToPostUpdates = (callback) => {
-  try {
-    const subscription = supabase
-      .channel('posts_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'posts' },
-        (payload) => {
-          console.log('Post update:', payload)
-          callback(payload)
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'post_comments' },
-        (payload) => {
-          console.log('Comment update:', payload)
-          callback(payload)
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'post_likes' },
-        (payload) => {
-          console.log('Like update:', payload)
-          callback(payload)
-        }
-      )
-      .subscribe()
+  console.log('Suscribiendo a actualizaciones en tiempo real')
 
-    return subscription
-  } catch {
-    console.log('WebSocket no disponible, usando simulación')
-    // Simular actualizaciones cada 30 segundos
-    const interval = setInterval(() => {
-      if (Math.random() > 0.8) {
-        callback({
-          eventType: 'INSERT',
-          table: 'posts',
-          new: {
-            id: Date.now(),
-            titulo: 'Nueva publicación simulada',
-            contenido: 'Esta es una publicación de prueba en tiempo real',
-            autor: 'Usuario Simulado',
-            likes_count: 0,
-            comments_count: 0,
-            created_at: new Date().toISOString()
-          }
-        })
+  // Agregar callback a la lista de suscriptores
+  webSocketSubscribers.add(callback)
+
+  // Simular actualizaciones periódicas ocasionales
+  const interval = setInterval(() => {
+    if (Math.random() > 0.95) { // 5% de probabilidad cada 10 segundos
+      const mockUpdate = {
+        eventType: 'INSERT',
+        table: 'posts',
+        new: {
+          id: Date.now(),
+          titulo: 'Nueva publicación en tiempo real',
+          contenido: 'Esta es una publicación simulada que aparece en tiempo real',
+          autor: 'Usuario Simulado',
+          likes_count: 0,
+          comments_count: 0,
+          created_at: new Date().toISOString()
+        }
       }
-    }, 30000)
+      callback(mockUpdate)
+    }
+  }, 10000) // Cada 10 segundos
 
-    return {
-      unsubscribe: () => clearInterval(interval)
+  return {
+    unsubscribe: () => {
+      clearInterval(interval)
+      webSocketSubscribers.delete(callback)
     }
   }
 }
