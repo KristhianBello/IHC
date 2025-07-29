@@ -1,13 +1,7 @@
-/* Variables de color */
-:root {
-  --primary-green: #2E8B57;
-  --secondary-green: #98FB98;
-  --light-bg: #F5F5F5;
-  --dark-text: #333333;
-  --white: #FFFFFF;
-  --gray-border: #E0E0E0;
-  --hover-green: #3CB371;
-}
+/* Importar estilos base */
+@import './base.css';
+
+/* Estilos específicos adicionales para mantener compatibilidad */
 
 /* Reset y estilos base */
 * {
