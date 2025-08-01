@@ -85,6 +85,7 @@
   /* Variables para tema (modo claro por defecto) */
   --bg-primary: #ffffff;
   --bg-secondary: #f8fffe;
+  --bg-tertiary: #f0f4f3;
   --text-primary: #2c3e50;
   --text-secondary: #7f8c8d;
   --border-color: #ecf0f1;
@@ -92,6 +93,22 @@
   --primary-green-light: #a8e6cf;
   --primary-green-hover: #1abc9c;
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Tema oscuro */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --border-color: #404040;
+  --primary-green: #1abc9c;
+  --primary-green-light: #16a085;
+  --primary-green-hover: #48c9b0;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --accent-color: #f39c12;
+  --accent-hover: #e67e22;
 }
 
 /* Reset mejorado */
@@ -746,29 +763,4 @@ textarea {
   color: var(--white-text);
 }
 
-/* Soporte para temas claro y oscuro */
-/* Modo oscuro */
-[data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --border-color: #404040;
-  --primary-green: #1abc9c;
-  --primary-green-light: #16a085;
-  --primary-green-hover: #a8e6cf;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-}
 
-/* Modo claro explícito */
-[data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fffe;
-  --text-primary: #2c3e50;
-  --text-secondary: #7f8c8d;
-  --border-color: #ecf0f1;
-  --primary-green: #16a085;
-  --primary-green-light: #a8e6cf;
-  --primary-green-hover: #1abc9c;
-  --shadow-color: rgba(0, 0, 0, 0.08);
-}

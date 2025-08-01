@@ -1,13 +1,6 @@
 <template>
   <div>
-    <header class="header">
-      <img :src="logo" alt="Logo Descubre tu barrio" class="logo" />
-      <nav>
-        <RouterLink to="/foro" class="btn btn-outline">
-          <i class="fas fa-arrow-left"></i> Volver al foro
-        </RouterLink>
-      </nav>
-    </header>
+    <HeaderWithProfile :show-back-to-forum="true" />
 
     <main class="form-container">
       <div class="form-header">
@@ -259,7 +252,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { updateUserProfile } from '@/lib/supabaseClient'
-import logo from '@/assets/logo.png'
+import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
 
 const router = useRouter()
 

@@ -228,14 +228,6 @@ function resetForm() {
 </script>
 
 <style scoped>
-/* Panel para especificar otra actividad */
-.other-activity-panel {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--light-bg);
-  border-radius: 8px;
-  border: 1px solid var(--gray-border);
-}
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
 /* Variables de color */
@@ -247,6 +239,15 @@ function resetForm() {
   --white: #FFFFFF;
   --gray-border: #E0E0E0;
   --hover-green: #3CB371;
+}
+
+/* Panel para especificar otra actividad */
+.other-activity-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--light-bg);
+  border-radius: 8px;
+  border: 1px solid var(--gray-border);
 }
 
 /* Estructura principal */

@@ -1,12 +1,14 @@
 <template>
   <div class="gallery-layout">
     <!-- Header -->
-    <header class="gallery-header">
-      <div class="header-container">
-        <div class="header-left">
-          <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
-          <h1 class="header-title">{{ t('gallery') }}</h1>
-        </div>
+    <HeaderWithProfile :show-back-to-forum="true" />
+
+    <div class="gallery-content">
+      <div class="gallery-header-section">
+        <h1 class="page-title">
+          <i class="fas fa-images"></i>
+          {{ t('gallery') }}
+        </h1>
 
         <div class="header-actions">
           <div class="upload-section">
@@ -23,11 +25,6 @@
               {{ t('upload') }}
             </button>
           </div>
-
-          <router-link to="/foro" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i>
-            {{ t('backToForum') }}
-          </router-link>
         </div>
       </div>
 
@@ -41,7 +38,7 @@
           </select>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- Galería -->
     <main class="gallery-main">
@@ -136,6 +133,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '@/composables/useI18n.js'
+import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
 
 const { t } = useI18n()
 
@@ -240,7 +238,39 @@ onMounted(() => {
 <style scoped>
 .gallery-layout {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: var(--bg-primary);
+}
+
+.gallery-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.gallery-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-title i {
+  color: var(--accent-color);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .gallery-header {

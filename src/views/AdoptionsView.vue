@@ -1,28 +1,8 @@
 <template>
   <div class="adoptions-container">
-    <!-- Header principal similar a Foro.vue -->
-    <header class="main-header">
-      <div class="header-container">
-        <div class="header-left">
-          <RouterLink to="/foro">
-            <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
-          </RouterLink>
-        </div>
-        <div class="header-center">
-          <div class="language-selector">
-            <button @click="toggleLanguage" class="btn-language btn-with-icon">
-              <i class="fas fa-globe"></i>
-              {{ currentLanguage === 'es' ? 'ES' : 'EN' }}
-            </button>
-          </div>
-        </div>
-        <div class="header-right">
-          <RouterLink to="/foro" class="btn btn-outline" style="margin-right: 12px;">
-            <i class="fas fa-arrow-left"></i> Volver al Foro
-          </RouterLink>
-        </div>
-      </div>
-    </header>
+    <!-- Header principal con perfil y modo oscuro -->
+    <HeaderWithProfile :show-back-to-forum="true" />
+
     <div class="header" style="margin-top: 24px;">
       <h2><i class="fas fa-seedling"></i> Mis Adopciones</h2>
       <RouterLink to="/solicitud" class="btn btn-primary" style="margin-left: 24px;">
@@ -150,9 +130,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useI18n } from '@/composables/useI18n.js'
+import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
 
-const { t, currentLanguage, toggleLanguage } = useI18n()
 import {
   loadAdoptions,
   deleteAdoption as removeAdoption,

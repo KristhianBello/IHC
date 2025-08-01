@@ -1,21 +1,7 @@
 <template>
   <div class="map-layout">
     <!-- Header principal -->
-    <header class="main-header">
-      <div class="header-container">
-        <div class="header-left">
-          <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
-          <h1 class="header-title">{{ t('spaceMap') }}</h1>
-        </div>
-        
-        <div class="header-right">
-          <router-link to="/foro" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i>
-            {{ t('backToForum') }}
-          </router-link>
-        </div>
-      </div>
-    </header>
+    <HeaderWithProfile :show-back-to-forum="true" />
 
     <div class="map-container">
       <!-- Panel lateral -->
@@ -184,7 +170,7 @@
             </div>
 
             <div class="detail-actions">
-              <button 
+              <button
                 v-if="selectedSpace.type === 'adoption'"
                 @click="viewAdoption(selectedSpace.id)"
                 class="btn btn-primary btn-sm"
@@ -192,7 +178,7 @@
                 <i class="fas fa-eye"></i>
                 {{ t('viewDetails') }}
               </button>
-              <button 
+              <button
                 v-if="selectedSpace.type === 'task'"
                 @click="viewTask(selectedSpace.id)"
                 class="btn btn-primary btn-sm"
@@ -200,7 +186,7 @@
                 <i class="fas fa-calendar"></i>
                 {{ t('viewTask') }}
               </button>
-              <button 
+              <button
                 v-if="selectedSpace.type === 'report'"
                 @click="viewReport(selectedSpace.id)"
                 class="btn btn-primary btn-sm"
@@ -226,6 +212,7 @@ import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useI18n } from '../composables/useI18n.js'
+import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -401,7 +388,7 @@ const clearMarkers = () => {
 
 const selectSpace = (space) => {
   selectedSpace.value = space
-  
+
   // Centrar mapa en el espacio seleccionado
   if (map.value && space.coordinates) {
     map.value.setView(space.coordinates, 16)

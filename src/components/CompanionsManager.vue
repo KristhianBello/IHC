@@ -1,21 +1,7 @@
 <template>
   <div class="companions-layout">
     <!-- Header principal -->
-    <header class="main-header">
-      <div class="header-container">
-        <div class="header-left">
-          <img src="@/assets/logo.png" alt="Logo" class="header-logo" />
-          <h1 class="header-title">{{ myCompanions }}</h1>
-        </div>
-        
-        <div class="header-right">
-          <router-link to="/foro" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i>
-            {{ backToForum }}
-          </router-link>
-        </div>
-      </div>
-    </header>
+    <HeaderWithProfile :show-back-to-forum="true" />
 
     <div class="companions-container">
       <!-- Sección de búsqueda y agregar compañeros -->
@@ -26,7 +12,7 @@
             {{ findCompanions }}
           </h2>
         </div>
-        
+
         <div class="search-input-wrapper">
           <i class="fas fa-search search-icon"></i>
           <input
@@ -49,22 +35,22 @@
             class="user-result-card"
           >
             <div class="user-info">
-              <img 
-                v-if="user.avatar_url" 
-                :src="user.avatar_url" 
+              <img
+                v-if="user.avatar_url"
+                :src="user.avatar_url"
                 :alt="user.username"
                 class="user-avatar"
               />
               <div v-else class="user-avatar-placeholder">
                 <i class="fas fa-user"></i>
               </div>
-              
+
               <div class="user-details">
                 <h4>{{ user.username }}</h4>
                 <p>{{ user.email }}</p>
               </div>
             </div>
-            
+
             <button
               @click="sendRequest(user.id)"
               :disabled="isRequesting || isAlreadyCompanion(user.id)"
@@ -75,7 +61,7 @@
             </button>
           </div>
         </div>
-        
+
         <div v-else-if="searchTerm && !isSearching" class="no-results">
           <i class="fas fa-search"></i>
           <p>{{ noUsersFound }}</p>
@@ -111,16 +97,16 @@
             class="companion-card"
           >
             <div class="companion-info">
-              <img 
-                v-if="companion.companion_profile?.avatar_url" 
-                :src="companion.companion_profile.avatar_url" 
+              <img
+                v-if="companion.companion_profile?.avatar_url"
+                :src="companion.companion_profile.avatar_url"
                 :alt="companion.companion_profile.username"
                 class="companion-avatar"
               />
               <div v-else class="companion-avatar-placeholder">
                 <i class="fas fa-user"></i>
               </div>
-              
+
               <div class="companion-details">
                 <h4>{{ companion.companion_profile?.username }}</h4>
                 <p class="companion-status">
@@ -138,7 +124,7 @@
               >
                 <i class="fas fa-eye"></i>
               </button>
-              
+
               <button
                 @click="removeCompanion(companion.id, companion.companion_profile?.username)"
                 class="btn btn-danger btn-sm"
@@ -156,18 +142,18 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { 
-  searchUsers, 
-  sendCompanionRequest, 
-  getCompanions, 
-  removeCompanion as removeCompanionAPI 
+import {
+  searchUsers,
+  sendCompanionRequest,
+  getCompanions,
+  removeCompanion as removeCompanionAPI
 } from '../lib/supabaseClient.js'
 import { useI18n } from '../composables/useI18n.js'
+import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
 
 const { t } = useI18n()
 
 const myCompanions = t('myCompanions')
-const backToForum = t('backToForum')
 const findCompanions = t('findCompanions')
 const searchByUsername = t('searchByUsername')
 const alreadyCompanion = t('alreadyCompanion')
@@ -206,7 +192,7 @@ async function loadCompanions() {
   try {
     const { data, error } = await getCompanions()
     if (error) throw error
-    
+
     companions.value = data || []
   } catch (error) {
     console.error('Error cargando compañeros:', error)
@@ -221,7 +207,7 @@ function debounceSearch() {
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value)
   }
-  
+
   searchTimeout.value = setTimeout(async () => {
     if (searchTerm.value.length >= 2) {
       await performSearch()
@@ -236,7 +222,7 @@ async function performSearch() {
   try {
     const { data, error } = await searchUsers(searchTerm.value)
     if (error) throw error
-    
+
     searchResults.value = data || []
   } catch (error) {
     console.error('Error en búsqueda:', error)
@@ -257,14 +243,14 @@ function clearSearch() {
 async function sendRequest(userId) {
   isRequesting.value = true
   try {
-    const { data, error } = await sendCompanionRequest(userId)
+    const { error } = await sendCompanionRequest(userId)
     if (error) throw error
-    
+
     showNotification(t('requestSent'), 'success')
-    
+
     // Limpiar búsqueda
     clearSearch()
-    
+
   } catch (error) {
     console.error('Error enviando solicitud:', error)
     showNotification(t('errorSendingRequest'), 'error')
@@ -281,7 +267,7 @@ async function removeCompanion(companionId, username) {
   try {
     const { error } = await removeCompanionAPI(companionId)
     if (error) throw error
-    
+
     companions.value = companions.value.filter(c => c.id !== companionId)
     showNotification(t('companionRemoved'), 'success')
   } catch (error) {
@@ -292,6 +278,7 @@ async function removeCompanion(companionId, username) {
 
 function viewProfile(userId) {
   // Implementar vista de perfil
+  console.log('Ver perfil de usuario:', userId)
   showNotification(t('profileViewNotImplemented'), 'info')
 }
 
