@@ -107,8 +107,9 @@
   --primary-green-light: #16a085;
   --primary-green-hover: #48c9b0;
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --accent-color: #f39c12;
-  --accent-hover: #e67e22;
+  --accent-color: #1abc9c; /* Naranja suave para modo oscuro */
+  --accent-hover: #1abc9c;
+  --warning-color: #1abc9c; /* Naranja suave para advertencias en modo oscuro */
 }
 
 /* Reset mejorado */
