@@ -508,6 +508,34 @@ async function handleRegister() {
     }
 
     if (data?.user) {
+      // Crear perfil inicial en la base de datos
+      try {
+        const { updateUserProfile } = await import('@/lib/supabaseClient.js')
+        await updateUserProfile({
+          firstName: formData.value.nombre.trim(),
+          lastName: '',
+          email: formData.value.email.trim().toLowerCase(),
+          phone: '',
+          birthDate: '',
+          gender: '',
+          address: '',
+          neighborhood: '',
+          city: '',
+          emergencyContact: '',
+          bio: '',
+          interests: [],
+          skills: [],
+          organization: '',
+          volunteerTime: '',
+          notifications: { email: true, sms: false, push: true, newsletter: true },
+          privacy: { showProfile: true, showContact: true, showParticipation: true },
+          language: 'es',
+          theme: 'light',
+          avatar: null
+        })
+      } catch (e) {
+        console.error('Error creando perfil inicial:', e)
+      }
       alert(t('registerSuccess'))
       formData.value = {
         nombre: '',

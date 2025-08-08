@@ -28,61 +28,44 @@ let currentLoggedUser = null
 
 // Función de registro real
 export const signUp = async ({ email, password, userData }) => {
-  console.log('Simulando registro:', { nombre: userData?.nombre, email, password })
-
-  // Verificar si el usuario ya existe
-  if (registeredUsers.has(email)) {
-    return {
-      data: null,
-      error: { message: 'El usuario ya existe' }
-    }
-  }
-
-  // Crear nuevo usuario
-  const newUser = {
-    id: `user_real_${Date.now()}`,
+  // Registro real en Supabase Auth
+  const { data, error } = await supabase.auth.signUp({
     email,
-    password,
-    username: userData?.nombre || 'Usuario',
-    isRealUser: true
+    password
+  })
+  if (error) {
+    return { data: null, error }
   }
-
-  registeredUsers.set(email, newUser)
-  currentLoggedUser = newUser
-
-  // Guardar en localStorage para persistencia
-  localStorage.setItem('currentUser', JSON.stringify(newUser))
+  // Crear perfil en la tabla 'profiles'
+  const profileData = {
+    first_name: userData?.firstName || '',
+    last_name: userData?.lastName || '',
+    email,
+    avatar_url: userData?.avatar || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  await supabase.from('profiles').insert(profileData)
+  // Guardar usuario en localStorage
+  localStorage.setItem('currentUser', JSON.stringify(data.user))
   localStorage.setItem('isRealUser', 'true')
-
-  return {
-    data: { user: newUser },
-    error: null
-  }
+  return { data, error: null }
 }
 
 // Función de login real
 export const signInWithPassword = async ({ email, password }) => {
-  console.log('Simulando login:', email, password)
-
-  const user = registeredUsers.get(email)
-
-  if (!user || user.password !== password) {
-    return {
-      data: null,
-      error: { message: 'Credenciales incorrectas' }
-    }
+  // Login real en Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+  if (error) {
+    return { data: null, error }
   }
-
-  currentLoggedUser = user
-
-  // Guardar en localStorage para persistencia
-  localStorage.setItem('currentUser', JSON.stringify(user))
-  localStorage.setItem('isRealUser', user.isRealUser ? 'true' : 'false')
-
-  return {
-    data: { user },
-    error: null
-  }
+  // Guardar usuario en localStorage
+  localStorage.setItem('currentUser', JSON.stringify(data.user))
+  localStorage.setItem('isRealUser', 'true')
+  return { data, error: null }
 }
 
 // Funciones de puente para compatibilidad
@@ -168,15 +151,81 @@ export const addTask = async (taskData) => {
 }
 
 export const updateUserProfile = async (profileData) => {
-  console.log('Simulando actualización de perfil:', profileData)
+  try {
+    // Buscar el perfil por email
+    const { data: existing, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', profileData.email)
+      .single()
 
-  return {
-    success: true,
-    profile: {
-      id: Date.now(),
-      ...profileData,
-      updated_at: new Date().toISOString()
+    let result
+    if (existing && existing.id) {
+      // Actualizar perfil existente
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profileData.firstName,
+          last_name: profileData.lastName,
+          phone: profileData.phone,
+          birth_date: profileData.birthDate,
+          gender: profileData.gender,
+          address: profileData.address,
+          neighborhood: profileData.neighborhood,
+          city: profileData.city,
+          emergency_contact: profileData.emergencyContact,
+          bio: profileData.bio,
+          interests: profileData.interests,
+          skills: profileData.skills,
+          organization: profileData.organization,
+          volunteer_time: profileData.volunteerTime,
+          notifications: profileData.notifications,
+          privacy: profileData.privacy,
+          language: profileData.language,
+          theme: profileData.theme,
+          avatar_url: profileData.avatar,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+      result = { data, error }
+    } else {
+      // Insertar nuevo perfil
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          first_name: profileData.firstName,
+          last_name: profileData.lastName,
+          email: profileData.email,
+          phone: profileData.phone,
+          birth_date: profileData.birthDate,
+          gender: profileData.gender,
+          address: profileData.address,
+          neighborhood: profileData.neighborhood,
+          city: profileData.city,
+          emergency_contact: profileData.emergencyContact,
+          bio: profileData.bio,
+          interests: profileData.interests,
+          skills: profileData.skills,
+          organization: profileData.organization,
+          volunteer_time: profileData.volunteerTime,
+          notifications: profileData.notifications,
+          privacy: profileData.privacy,
+          language: profileData.language,
+          theme: profileData.theme,
+          avatar_url: profileData.avatar,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+      result = { data, error }
     }
+    if (result.error) {
+      return { success: false, error: result.error.message }
+    }
+    return { success: true, profile: result.data[0] }
+  } catch (error) {
+    return { success: false, error: error.message }
   }
 }
 
@@ -347,20 +396,16 @@ export const getProfile = async (userId = null) => {
       }
     }
 
-    return {
-      data: {
-        id: currentUser.id,
-        username: currentUser.username,
-        email: currentUser.email,
-        avatar_url: '',
-        bio: 'Miembro activo',
-        theme: 'light',
-        language: 'es',
-        isRealUser: currentUser.isRealUser || false,
-        updated_at: new Date().toISOString()
-      },
-      error: null
+    // Buscar perfil por email
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', currentUser.email)
+      .single()
+    if (error) {
+      return { data: null, error }
     }
+    return { data, error: null }
   } catch (error) {
     console.error('Error obteniendo perfil:', error)
     return {
