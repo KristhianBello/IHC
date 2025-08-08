@@ -13,28 +13,28 @@
     <!-- Estadísticas -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
         <div class="stat-info">
           <h3>{{ stats.total }}</h3>
           <p>Total</p>
         </div>
       </div>
       <div class="stat-card pending">
-        <div class="stat-icon">⏳</div>
+        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
         <div class="stat-info">
           <h3>{{ stats.pending }}</h3>
           <p>Pendientes</p>
         </div>
       </div>
       <div class="stat-card approved">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
         <div class="stat-info">
           <h3>{{ stats.approved }}</h3>
           <p>Aprobadas</p>
         </div>
       </div>
       <div class="stat-card rejected">
-        <div class="stat-icon">❌</div>
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
         <div class="stat-info">
           <h3>{{ stats.rejected }}</h3>
           <p>Rechazadas</p>

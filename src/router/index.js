@@ -4,6 +4,7 @@ import SolicitudAdopcion from '@/components/Solicitud.vue'
 import Foro from '@/components/Foro.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import AdoptionsView from '@/views/AdoptionsView.vue'
+import MyAdoptionsView from '@/views/MyAdoptionsView.vue'
 import ReportView from '@/views/ReportView.vue'
 import TaskScheduleView from '@/views/TaskScheduleView.vue'
 import UserProfileView from '@/views/UserProfileView.vue'
@@ -32,7 +33,7 @@ const routes = [
   {
     path: '/adopciones',
     name: 'adopciones',
-    component: AdoptionsView,
+  component: MyAdoptionsView,
   },
   {
     path: '/registro',
