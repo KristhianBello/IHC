@@ -253,6 +253,8 @@ let postsDatabase = [
     autor: 'Administrador',
     profiles: {
       username: 'Administrador',
+      first_name: 'Admin',
+      last_name: 'Sistema',
       avatar_url: null
     }
   },
@@ -268,6 +270,8 @@ let postsDatabase = [
     autor: 'María González',
     profiles: {
       username: 'María González',
+      first_name: 'María',
+      last_name: 'González',
       avatar_url: null
     }
   }
@@ -287,6 +291,12 @@ export const createPost = async (postData) => {
       }
     }
 
+    // Obtener perfil del usuario
+    const { data: userProfile } = await getProfile()
+    const displayName = userProfile?.first_name && userProfile?.last_name
+      ? `${userProfile.first_name} ${userProfile.last_name}`
+      : userProfile?.first_name || userProfile?.username || currentUser.email.split('@')[0]
+
     const newPost = {
       id: Date.now(),
       title: postData.titulo,      // Mapear titulo a title
@@ -296,10 +306,12 @@ export const createPost = async (postData) => {
       comments_count: 0,
       created_at: new Date().toISOString(),
       author_id: currentUser.id,
-      autor: currentUser.username,
+      autor: displayName,
       profiles: {
-        username: currentUser.username,
-        avatar_url: null
+        username: displayName,
+        first_name: userProfile?.first_name || '',
+        last_name: userProfile?.last_name || '',
+        avatar_url: userProfile?.avatar_url || null
       }
     }
 
@@ -396,16 +408,46 @@ export const getProfile = async (userId = null) => {
       }
     }
 
-    // Buscar perfil por email
-    const { data, error } = await supabase
+    // Primero intentar buscar perfil en la tabla profiles
+    const { data: profileData, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('email', currentUser.email)
       .single()
-    if (error) {
-      return { data: null, error }
+
+    if (profileData && !error) {
+      return { data: profileData, error: null }
     }
-    return { data, error: null }
+
+    // Si no hay perfil en la tabla, crear uno con la información disponible del usuario
+    const userData = registeredUsers.get(currentUser.email)
+    if (userData) {
+      const fallbackProfile = {
+        id: currentUser.id,
+        email: currentUser.email,
+        username: userData.username,
+        first_name: userData.username.split(' ')[0] || userData.username,
+        last_name: userData.username.split(' ').slice(1).join(' ') || '',
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      return { data: fallbackProfile, error: null }
+    }
+
+    // Si no está en registeredUsers, usar datos básicos del usuario
+    const basicProfile = {
+      id: currentUser.id,
+      email: currentUser.email,
+      username: currentUser.email.split('@')[0], // Usar parte del email como username
+      first_name: currentUser.email.split('@')[0],
+      last_name: '',
+      avatar_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    return { data: basicProfile, error: null }
   } catch (error) {
     console.error('Error obteniendo perfil:', error)
     return {
@@ -531,6 +573,8 @@ commentsStorage.set(1, [
     autor: 'Ana López',
     profiles: {
       username: 'Ana López',
+      first_name: 'Ana',
+      last_name: 'López',
       avatar_url: null
     },
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
@@ -544,6 +588,8 @@ commentsStorage.set(1, [
     autor: 'Carlos García',
     profiles: {
       username: 'Carlos García',
+      first_name: 'Carlos',
+      last_name: 'García',
       avatar_url: null
     },
     created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
@@ -560,6 +606,8 @@ commentsStorage.set(2, [
     autor: 'Ana López',
     profiles: {
       username: 'Ana López',
+      first_name: 'Ana',
+      last_name: 'López',
       avatar_url: null
     },
     created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
@@ -590,16 +638,24 @@ export const addComment = async (commentData) => {
       }
     }
 
+    // Obtener perfil del usuario
+    const { data: userProfile } = await getProfile()
+    const displayName = userProfile?.first_name && userProfile?.last_name
+      ? `${userProfile.first_name} ${userProfile.last_name}`
+      : userProfile?.first_name || userProfile?.username || currentUser.email.split('@')[0]
+
     const newComment = {
       id: Date.now(),
       post_id: commentData.post_id,
       content: commentData.content,
       user_id: currentUser.id,
       parent_id: commentData.parent_id || null,
-      autor: currentUser.username,
+      autor: displayName,
       profiles: {
-        username: currentUser.username,
-        avatar_url: null
+        username: displayName,
+        first_name: userProfile?.first_name || '',
+        last_name: userProfile?.last_name || '',
+        avatar_url: userProfile?.avatar_url || null
       },
       created_at: new Date().toISOString()
     }
