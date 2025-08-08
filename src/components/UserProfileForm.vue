@@ -11,6 +11,7 @@
         </p>
       </div>
 
+
       <form class="adoption-form" @submit.prevent="handleSubmit">
         <!-- INFORMACIÓN PERSONAL -->
         <section class="form-section">
@@ -249,9 +250,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
+import HeaderWithProfile from './HeaderWithProfile.vue'
+import { getProfile, updateUserProfile } from '../lib/supabaseClient.js'
 
 const router = useRouter()
 
@@ -311,31 +313,40 @@ const formData = ref({
   avatar: null
 })
 
-import { onMounted } from 'vue'
 onMounted(async () => {
-  const { data, error } = await getProfile()
-  if (data) {
-    // Asignar los datos recibidos al formulario
-    formData.value.firstName = data.first_name || ''
-    formData.value.lastName = data.last_name || ''
-    formData.value.email = data.email || ''
-    formData.value.phone = data.phone || ''
-    formData.value.birthDate = data.birth_date || ''
-    formData.value.gender = data.gender || ''
-    formData.value.address = data.address || ''
-    formData.value.neighborhood = data.neighborhood || ''
-    formData.value.city = data.city || ''
-    formData.value.emergencyContact = data.emergency_contact || ''
-    formData.value.bio = data.bio || ''
-    formData.value.interests = data.interests || []
-    formData.value.skills = data.skills || []
-    formData.value.organization = data.organization || ''
-    formData.value.volunteerTime = data.volunteer_time || ''
-    formData.value.notifications = data.notifications || { email: true, sms: false, push: true, newsletter: true }
-    formData.value.privacy = data.privacy || { showProfile: true, showContact: true, showParticipation: true }
-    formData.value.language = data.language || 'es'
-    formData.value.theme = data.theme || 'light'
-    formData.value.avatar = data.avatar_url || null
+  try {
+    const { data, error } = await getProfile()
+    if (data) {
+      // Asignar los datos recibidos al formulario
+      formData.value.firstName = data.first_name || ''
+      formData.value.lastName = data.last_name || ''
+      formData.value.email = data.email || ''
+      formData.value.phone = data.phone || ''
+      formData.value.birthDate = data.birth_date || ''
+      formData.value.gender = data.gender || ''
+      formData.value.address = data.address || ''
+      formData.value.neighborhood = data.neighborhood || ''
+      formData.value.city = data.city || ''
+      formData.value.emergencyContact = data.emergency_contact || ''
+      formData.value.bio = data.bio || ''
+      formData.value.interests = data.interests || []
+      formData.value.skills = data.skills || []
+      formData.value.organization = data.organization || ''
+      formData.value.volunteerTime = data.volunteer_time || ''
+      formData.value.notifications = data.notifications || { email: true, sms: false, push: true, newsletter: true }
+      formData.value.privacy = data.privacy || { showProfile: true, showContact: true, showParticipation: true }
+      formData.value.language = data.language || 'es'
+      formData.value.theme = data.theme || 'light'
+      formData.value.avatar = data.avatar_url || null
+
+      console.log('Perfil cargado:', data)
+    } else if (error) {
+      console.error('Error cargando perfil:', error)
+      alert('Error al cargar el perfil del usuario.')
+    }
+  } catch (error) {
+    console.error('Error en onMounted:', error)
+    alert('Error al inicializar el perfil.')
   }
 })
 
@@ -526,6 +537,80 @@ function resetForm() {
   color: var(--dark-text);
 }
 
+/* Información del usuario actual */
+.current-user-info {
+  margin-bottom: 2rem;
+}
+
+.user-card {
+  background: linear-gradient(135deg, var(--profile-purple), #7B1FA2);
+  border-radius: 15px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: white;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+}
+
+.user-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid white;
+  flex-shrink: 0;
+}
+
+.user-avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-details h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.user-email {
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.user-status i {
+  color: #4CAF50;
+  font-size: 0.7rem;
+}
+
 /* Estilos del formulario */
 .adoption-form {
   background-color: var(--white);
@@ -681,6 +766,16 @@ function resetForm() {
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .user-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .user-details h3 {
+    font-size: 1.1rem;
   }
 }
 </style>
