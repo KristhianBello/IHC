@@ -28,14 +28,24 @@
             <i class="fas fa-lock"></i>
             {{ t('password') }}
           </label>
-          <input
-            id="password"
-            v-model="loginData.password"
-            type="password"
-            class="form-input"
-            :placeholder="t('passwordPlaceholder')"
-            required
-          />
+          <div class="password-input-container">
+            <input
+              id="password"
+              v-model="loginData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-input password-input"
+              :placeholder="t('passwordPlaceholder')"
+              required
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              @click="togglePasswordVisibility"
+              :title="showPassword ? t('hidePassword') : t('showPassword')"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
         </div>
 
         <div class="form-options">
@@ -68,15 +78,24 @@
         </router-link>
       </form>
 
-      <div class="language-selector">
-        <button @click="changeLanguage('es')" :class="{ active: currentLanguage === 'es' }">
-          <span class="flag">🇪🇸</span>
-          ES
-        </button>
-        <button @click="changeLanguage('en')" :class="{ active: currentLanguage === 'en' }">
-          <span class="flag">🇺🇸</span>
-          EN
-        </button>
+      <div class="form-footer">
+        <div class="language-selector">
+          <button @click="changeLanguage('es')" :class="{ active: currentLanguage === 'es' }">
+            <span class="flag">🇪🇸</span>
+            ES
+          </button>
+          <button @click="changeLanguage('en')" :class="{ active: currentLanguage === 'en' }">
+            <span class="flag">🇺🇸</span>
+            EN
+          </button>
+        </div>
+
+        <div class="theme-toggle">
+          <button @click="toggleTheme" class="theme-btn">
+            <i :class="currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+            {{ currentTheme === 'dark' ? t('lightMode') : t('darkMode') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -86,10 +105,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@/composables/useI18n.js'
+import { useTheme } from '@/composables/useTheme.js'
 import { signInWithPassword } from '@/lib/supabaseClient.js'
 
 const router = useRouter()
 const { t, changeLanguage, currentLanguage } = useI18n()
+const { currentTheme, toggleTheme } = useTheme()
 
 const loginData = ref({
   email: '',
@@ -99,6 +120,12 @@ const loginData = ref({
 const rememberMe = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const showPassword = ref(false)
+
+// Función para mostrar/ocultar contraseña
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
 
 const handleLogin = async () => {
   if (!loginData.value.email || !loginData.value.password) {
@@ -142,18 +169,19 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--bg-secondary);
   padding: 20px;
 }
 
 .login-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   padding: 40px;
   width: 100%;
   max-width: 450px;
   animation: slideUp 0.6s ease-out;
+  border: 1px solid var(--border-color);
 }
 
 @keyframes slideUp {
@@ -261,6 +289,73 @@ const handleLogin = async () => {
   cursor: pointer;
   color: #6c757d;
   font-size: 0.9rem;
+}
+
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #28a745;
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid #28a745;
+  outline-offset: 2px;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.theme-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.theme-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+@media (max-width: 480px) {
+  .form-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 .checkbox-label input {
