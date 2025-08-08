@@ -5,8 +5,8 @@
   --primary-hover: #1abc9c; /* Verde hover más brillante */
   --primary-dark: #138d75; /* Verde oscuro */
   --secondary-color: #a8e6cf; /* Verde claro suave */
-  --accent-color: #f39c12; /* Naranja de acento */
-  --accent-hover: #e67e22; /* Naranja hover */
+  --accent-color: #138d75; /* Naranja de acento */
+  --accent-hover: #138d75; /* Naranja hover */
 
   /* Colores de fondo */
   --light-bg: #f8fffe; /* Fondo muy claro con tinte verde */
@@ -23,7 +23,7 @@
   /* Colores de estado */
   --success-color: #27ae60; /* Verde éxito */
   --error-color: #e74c3c; /* Rojo error */
-  --warning-color: #f39c12; /* Amarillo advertencia */
+  --warning-color: #ff6f61; /* Rojo suave para advertencia, sin amarillo */
   --info-color: #3498db; /* Azul información */
 
   /* Bordes y sombras */
@@ -109,7 +109,7 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   --accent-color: #1abc9c; /* Naranja suave para modo oscuro */
   --accent-hover: #1abc9c;
-  --warning-color: #1abc9c; /* Naranja suave para advertencias en modo oscuro */
+  --warning-color: #ffffff; /* Rojo suave para advertencia en modo oscuro */
 }
 
 /* Reset mejorado */
