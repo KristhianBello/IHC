@@ -37,9 +37,15 @@ export const signUp = async ({ email, password, userData }) => {
     return { data: null, error }
   }
   // Crear perfil en la tabla 'profiles'
+  const nombreCompleto = userData?.nombre?.trim() || '';
+  const partesNombre = nombreCompleto.split(' ');
+  const firstName = partesNombre[0] || userData?.firstName || '';
+  const lastName = partesNombre.slice(1).join(' ') || userData?.lastName || '';
+
   const profileData = {
-    first_name: userData?.firstName || '',
-    last_name: userData?.lastName || '',
+    first_name: firstName,
+    last_name: lastName,
+    nombre: nombreCompleto || (userData?.firstName && userData?.lastName ? `${userData.firstName} ${userData.lastName}` : (userData?.firstName || '')),
     email,
     avatar_url: userData?.avatar || null,
     created_at: new Date().toISOString(),
@@ -775,69 +781,375 @@ export const subscribeToPostUpdates = (callback) => {
   }
 }
 
-// Funciones de compañeros
-export const searchUsers = async (searchTerm) => {
-  console.log('Simulando búsqueda de usuarios:', searchTerm)
-
-  // Simular usuarios de ejemplo
-  const mockUsers = [
-    {
-      id: 1,
-      username: 'ana_lopez',
-      full_name: 'Ana López',
-      avatar_url: null,
-      is_friend: false
-    },
-    {
-      id: 2,
-      username: 'carlos_garcia',
-      full_name: 'Carlos García',
-      avatar_url: null,
-      is_friend: false
-    },
-    {
-      id: 3,
-      username: 'maria_rodriguez',
-      full_name: 'María Rodríguez',
-      avatar_url: null,
-      is_friend: true
-    }
-  ]
-
-  // Filtrar por término de búsqueda
-  const filteredUsers = mockUsers.filter(user =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  return {
-    data: filteredUsers,
-    error: null
-  }
-}
-
+// Funciones de compañeros - ACTUALIZADO para sistema completo
 export const sendCompanionRequest = async (userId) => {
-  console.log('Simulando envío de solicitud de compañero:', userId)
-
-  // Simular respuesta exitosa
-  return {
-    data: {
-      id: Date.now(),
-      user_id: 'current-user',
-      companion_id: userId,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    },
-    error: null
-  }
+  console.log('Redirigiendo a nueva función sendFriendRequest:', userId)
+  return await sendFriendRequest(userId)
 }
 
 export const removeCompanion = async (companionId) => {
-  console.log('Simulando eliminación de compañero:', companionId)
+  console.log('Redirigiendo a nueva función removeFriend:', companionId)
+  return await removeFriend(companionId)
+}
 
-  // Simular respuesta exitosa
-  return {
-    data: { success: true },
-    error: null
+// ==================== SISTEMA DE AMIGOS/COMPAÑEROS ====================
+
+// Buscar usuarios por nombre o email
+export const searchUsers = async (searchTerm) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nombre, first_name, last_name, email, avatar_url, bio, city')
+      .or(`nombre.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+      .limit(10)
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error buscando usuarios:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener perfil público de un usuario
+export const getPublicProfile = async (userId) => {
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError) throw profileError
+
+    // Obtener configuración de privacidad
+    const { data: privacy } = await supabase
+      .from('profile_privacy_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+
+    // Aplicar filtros de privacidad
+    const filteredProfile = { ...profile }
+    if (privacy) {
+      if (!privacy.show_email) delete filteredProfile.email
+      if (!privacy.show_phone) delete filteredProfile.phone
+      if (!privacy.show_address) delete filteredProfile.address
+      if (!privacy.show_interests) delete filteredProfile.interests
+      if (!privacy.show_skills) delete filteredProfile.skills
+      if (!privacy.show_bio) delete filteredProfile.bio
+    }
+
+    return { data: filteredProfile, error: null }
+  } catch (error) {
+    console.error('Error obteniendo perfil público:', error)
+    return { data: null, error }
+  }
+}
+
+// Enviar solicitud de amistad
+export const sendFriendRequest = async (addresseeId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Verificar si ya existe una relación
+    const { data: existing } = await supabase
+      .from('user_friendships')
+      .select('*')
+      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${currentUser.id})`)
+      .single()
+
+    if (existing) {
+      return { data: null, error: { message: 'Ya existe una relación con este usuario' } }
+    }
+
+    // Crear solicitud de amistad
+    const { data, error } = await supabase
+      .from('user_friendships')
+      .insert({
+        requester_id: currentUser.id,
+        addressee_id: addresseeId,
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Crear notificación
+    await supabase
+      .from('friendship_notifications')
+      .insert({
+        user_id: addresseeId,
+        friendship_id: data.id,
+        type: 'friend_request'
+      })
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Responder a solicitud de amistad
+export const respondToFriendRequest = async (friendshipId, response) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Actualizar estado de la amistad
+    const { data, error } = await supabase
+      .from('user_friendships')
+      .update({
+        status: response, // 'accepted', 'rejected', 'blocked'
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', friendshipId)
+      .eq('addressee_id', currentUser.id) // Solo el destinatario puede responder
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Crear notificación para el solicitante
+    await supabase
+      .from('friendship_notifications')
+      .insert({
+        user_id: data.requester_id,
+        friendship_id: friendshipId,
+        type: response === 'accepted' ? 'friend_accepted' : 'friend_rejected'
+      })
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error respondiendo solicitud de amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener solicitudes de amistad pendientes
+export const getPendingFriendRequests = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('user_friendships')
+      .select(`
+        *,
+        requester:profiles!user_friendships_requester_id_fkey(id, nombre, first_name, last_name, avatar_url)
+      `)
+      .eq('addressee_id', currentUser.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo solicitudes pendientes:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener lista de amigos
+export const getFriends = async (userId = null) => {
+  try {
+    const currentUser = await getCurrentUser()
+    const targetUserId = userId || currentUser?.id
+    if (!targetUserId) throw new Error('Usuario no especificado')
+
+    const { data, error } = await supabase
+      .rpc('get_user_friends', { target_user_id: targetUserId })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo amigos:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener estado de amistad entre dos usuarios
+export const getFriendshipStatus = async (otherUserId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return { data: 'none', error: null }
+
+    const { data, error } = await supabase
+      .rpc('get_friendship_status', {
+        user1_id: currentUser.id,
+        user2_id: otherUserId
+      })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo estado de amistad:', error)
+    return { data: 'none', error }
+  }
+}
+
+// Eliminar amistad
+export const removeFriend = async (friendId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { error } = await supabase
+      .from('user_friendships')
+      .delete()
+      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${currentUser.id})`)
+
+    if (error) throw error
+    return { data: { success: true }, error: null }
+  } catch (error) {
+    console.error('Error eliminando amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Bloquear usuario
+export const blockUser = async (userId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Buscar relación existente
+    const { data: existing } = await supabase
+      .from('user_friendships')
+      .select('*')
+      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${currentUser.id})`)
+      .single()
+
+    if (existing) {
+      // Actualizar a bloqueado
+      const { error } = await supabase
+        .from('user_friendships')
+        .update({ status: 'blocked' })
+        .eq('id', existing.id)
+
+      if (error) throw error
+    } else {
+      // Crear nueva relación de bloqueo
+      const { error } = await supabase
+        .from('user_friendships')
+        .insert({
+          requester_id: currentUser.id,
+          addressee_id: userId,
+          status: 'blocked'
+        })
+
+      if (error) throw error
+    }
+
+    return { data: { success: true }, error: null }
+  } catch (error) {
+    console.error('Error bloqueando usuario:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener notificaciones de amistad
+export const getFriendshipNotifications = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('friendship_notifications')
+      .select(`
+        *,
+        friendship:user_friendships(
+          *,
+          requester:profiles!user_friendships_requester_id_fkey(id, nombre, first_name, last_name, avatar_url),
+          addressee:profiles!user_friendships_addressee_id_fkey(id, nombre, first_name, last_name, avatar_url)
+        )
+      `)
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo notificaciones:', error)
+    return { data: null, error }
+  }
+}
+
+// Marcar notificación como leída
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const { error } = await supabase
+      .from('friendship_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+
+    if (error) throw error
+    return { data: { success: true }, error: null }
+  } catch (error) {
+    console.error('Error marcando notificación como leída:', error)
+    return { data: null, error }
+  }
+}
+
+// Configurar privacidad del perfil
+export const updateProfilePrivacy = async (privacySettings) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('profile_privacy_settings')
+      .upsert({
+        user_id: currentUser.id,
+        ...privacySettings,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error actualizando configuración de privacidad:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener configuración de privacidad
+export const getProfilePrivacy = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('profile_privacy_settings')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows found
+
+    // Si no existe configuración, devolver valores por defecto
+    if (!data) {
+      const defaultSettings = {
+        profile_visibility: 'public',
+        show_email: false,
+        show_phone: false,
+        show_address: false,
+        show_interests: true,
+        show_skills: true,
+        show_bio: true,
+        allow_friend_requests: true
+      }
+      return { data: defaultSettings, error: null }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo configuración de privacidad:', error)
+    return { data: null, error }
   }
 }

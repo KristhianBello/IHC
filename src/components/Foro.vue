@@ -28,9 +28,9 @@
               <div v-else class="user-avatar-placeholder">
                 <i class="fas fa-user"></i>
               </div>
-<span class="user-name">
-  {{ (userProfile?.first_name && userProfile?.last_name) ? `${userProfile.first_name} ${userProfile.last_name}` : (userProfile?.first_name || userProfile?.username || 'Usuario') }}
-</span>
+              <span class="user-name">
+                {{ userProfile?.nombre || (userProfile?.first_name && userProfile?.last_name) ? `${userProfile.first_name} ${userProfile.last_name}` : (userProfile?.first_name || userProfile?.username || 'Usuario') }}
+              </span>
               <i class="fas fa-chevron-down"></i>
             </button>
 
@@ -132,6 +132,14 @@
               <span>{{ t('myCompanions') }}</span>
             </router-link>
           </li>
+          <li>
+            <router-link to="/amigos" class="nav-link btn-with-icon">
+              <div class="nav-icon icon-hover-animate">
+                <i class="fas fa-user-friends"></i>
+              </div>
+              <span>{{ t('friendsAndConnections') }}</span>
+            </router-link>
+          </li>
         </ul>
       </nav>
     </aside>
@@ -185,7 +193,7 @@
                 <div v-else class="form-user-avatar-placeholder">
                   <i class="fas fa-user"></i>
                 </div>
-                <span class="form-username">{{ userProfile?.username || 'Usuario' }}</span>
+                <span class="form-username">{{ userProfile?.nombre || (userProfile?.first_name && userProfile?.last_name) ? `${userProfile.first_name} ${userProfile.last_name}` : (userProfile?.username || 'Usuario') }}</span>
               </div>
             </div>
 
