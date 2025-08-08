@@ -285,7 +285,11 @@
                 <i class="fas fa-user"></i>
               </div>
               <div class="author-info">
-                <h4>{{ post.profiles?.username || 'Usuario desconocido' }}</h4>
+                <h4>{{
+                  post.profiles?.first_name && post.profiles?.last_name
+                    ? `${post.profiles.first_name} ${post.profiles.last_name}`
+                    : post.profiles?.username || 'Usuario desconocido'
+                }}</h4>
                 <div class="post-meta">
                   <span class="post-date">
                     <i class="fas fa-clock"></i>
@@ -372,12 +376,20 @@
 
                 <div class="comment-content">
                   <div class="comment-header">
-                    <h5>{{ comment.profiles?.username || 'Usuario' }}</h5>
+                    <h5>{{
+                      comment.profiles?.first_name && comment.profiles?.last_name
+                        ? `${comment.profiles.first_name} ${comment.profiles.last_name}`
+                        : comment.profiles?.username || 'Usuario'
+                    }}</h5>
                     <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                   </div>
 
                   <div v-if="comment.parent_comment" class="comment-reply-to">
-                    {{ t('replyingTo') }} @{{ comment.parent_comment.profiles?.username }}
+                    {{ t('replyingTo') }} @{{
+                      comment.parent_comment.profiles?.first_name && comment.parent_comment.profiles?.last_name
+                        ? `${comment.parent_comment.profiles.first_name} ${comment.parent_comment.profiles.last_name}`
+                        : comment.parent_comment.profiles?.username
+                    }}
                   </div>
 
                   <p class="comment-text">{{ comment.content }}</p>
@@ -410,7 +422,11 @@
 
                 <div class="comment-input-container">
                   <div v-if="replyingTo[post.id]" class="reply-indicator">
-                    <span>{{ t('replyingTo') }} @{{ replyingTo[post.id].profiles?.username }}</span>
+                    <span>{{ t('replyingTo') }} @{{
+                      replyingTo[post.id].profiles?.first_name && replyingTo[post.id].profiles?.last_name
+                        ? `${replyingTo[post.id].profiles.first_name} ${replyingTo[post.id].profiles.last_name}`
+                        : replyingTo[post.id].profiles?.username
+                    }}</span>
                     <button
                       type="button"
                       @click="cancelReply(post.id)"
@@ -597,8 +613,21 @@ const initializeUser = async () => {
   try {
     currentUser.value = await getCurrentUser()
     if (currentUser.value) {
-      const { data: profile } = await getProfile()
-      userProfile.value = profile
+      const { data: profile, error } = await getProfile()
+      if (profile) {
+        userProfile.value = profile
+        console.log('Perfil de usuario cargado:', profile) // Para debug
+      } else {
+        console.error('Error cargando perfil:', error)
+        // Usar información básica del usuario si no hay perfil
+        userProfile.value = {
+          username: currentUser.value.email.split('@')[0],
+          first_name: currentUser.value.email.split('@')[0],
+          last_name: '',
+          email: currentUser.value.email,
+          avatar_url: null
+        }
+      }
     } else {
       router.push('/')
     }

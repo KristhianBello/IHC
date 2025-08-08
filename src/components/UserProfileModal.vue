@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n.js'
 import {
   getPublicProfile,
@@ -160,12 +160,6 @@ const loading = ref(false)
 const profile = ref(null)
 const friendshipStatus = ref('none')
 const sendingRequest = ref(false)
-
-// Computed
-const isCurrentUser = computed(() => {
-  // TODO: Comparar con el usuario actual cuando esté implementado
-  return false
-})
 
 // Métodos
 const loadProfile = async () => {
