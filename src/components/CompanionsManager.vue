@@ -38,7 +38,7 @@
               <img
                 v-if="user.avatar_url"
                 :src="user.avatar_url"
-                :alt="user.username"
+                :alt="user.nombre || user.username"
                 class="user-avatar"
               />
               <div v-else class="user-avatar-placeholder">
@@ -46,7 +46,7 @@
               </div>
 
               <div class="user-details">
-                <h4>{{ user.username }}</h4>
+                <h4>{{ user.nombre || (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username) }}</h4>
                 <p>{{ user.email }}</p>
               </div>
             </div>
@@ -98,9 +98,9 @@
           >
             <div class="companion-info">
               <img
-                v-if="companion.companion_profile?.avatar_url"
-                :src="companion.companion_profile.avatar_url"
-                :alt="companion.companion_profile.username"
+                v-if="companion.avatar_url"
+                :src="companion.avatar_url"
+                :alt="companion.nombre || companion.username"
                 class="companion-avatar"
               />
               <div v-else class="companion-avatar-placeholder">
@@ -108,7 +108,7 @@
               </div>
 
               <div class="companion-details">
-                <h4>{{ companion.companion_profile?.username }}</h4>
+                <h4>{{ companion.nombre || (companion.first_name && companion.last_name ? `${companion.first_name} ${companion.last_name}` : companion.username) }}</h4>
                 <p class="companion-status">
                   <i class="fas fa-circle status-online"></i>
                   {{ active }}
@@ -118,7 +118,7 @@
 
             <div class="companion-actions">
               <button
-                @click="viewProfile(companion.companion_id)"
+                @click="viewProfile(companion.id)"
                 class="btn btn-outline btn-sm"
                 :title="viewProfileTitle"
               >
@@ -126,7 +126,7 @@
               </button>
 
               <button
-                @click="removeCompanion(companion.id, companion.companion_profile?.username)"
+                @click="removeCompanion(companion.id, companion.nombre || companion.username)"
                 class="btn btn-danger btn-sm"
                 :title="removeCompanionTitle"
               >
@@ -137,6 +137,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de perfil de usuario -->
+    <UserProfileModal
+      :user-id="selectedUserId"
+      :is-visible="showProfileModal"
+      @close="closeProfileModal"
+      @friendship-updated="loadCompanions"
+    />
   </div>
 </template>
 
@@ -144,12 +152,13 @@
 import { ref, onMounted, computed } from 'vue'
 import {
   searchUsers,
-  sendCompanionRequest,
-  getCompanions,
-  removeCompanion as removeCompanionAPI
+  sendFriendRequest,
+  getFriends,
+  removeFriend as removeCompanionAPI
 } from '../lib/supabaseClient.js'
 import { useI18n } from '../composables/useI18n.js'
 import HeaderWithProfile from '@/components/HeaderWithProfile.vue'
+import UserProfileModal from '@/components/UserProfileModal.vue'
 
 const { t } = useI18n()
 
@@ -174,11 +183,13 @@ const loading = ref(true)
 const isSearching = ref(false)
 const isRequesting = ref(false)
 const searchTimeout = ref(null)
+const showProfileModal = ref(false)
+const selectedUserId = ref(null)
 
 // Computed properties
 const isAlreadyCompanion = computed(() => {
   return (userId) => {
-    return companions.value.some(c => c.companion_id === userId)
+    return companions.value.some(c => c.id === userId)
   }
 })
 
@@ -190,7 +201,7 @@ onMounted(async () => {
 async function loadCompanions() {
   loading.value = true
   try {
-    const { data, error } = await getCompanions()
+    const { data, error } = await getFriends()
     if (error) throw error
 
     companions.value = data || []
@@ -243,7 +254,7 @@ function clearSearch() {
 async function sendRequest(userId) {
   isRequesting.value = true
   try {
-    const { error } = await sendCompanionRequest(userId)
+    const { error } = await sendFriendRequest(userId)
     if (error) throw error
 
     showNotification(t('requestSent'), 'success')
@@ -277,9 +288,13 @@ async function removeCompanion(companionId, username) {
 }
 
 function viewProfile(userId) {
-  // Implementar vista de perfil
-  console.log('Ver perfil de usuario:', userId)
-  showNotification(t('profileViewNotImplemented'), 'info')
+  selectedUserId.value = userId
+  showProfileModal.value = true
+}
+
+function closeProfileModal() {
+  showProfileModal.value = false
+  selectedUserId.value = null
 }
 
 function showNotification(message, type = 'info') {
