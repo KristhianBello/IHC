@@ -871,7 +871,7 @@ export const getPublicProfile = async (userId) => {
       .rpc('get_public_profile', { user_id: userId })
 
     if (error) throw error
-    
+
     if (data.error) {
       return { data: null, error: { message: data.error } }
     }
@@ -893,7 +893,7 @@ export const sendFriendRequest = async (addresseeId) => {
       .rpc('send_friend_request', { addressee_user_id: addresseeId })
 
     if (error) throw error
-    
+
     if (data.error) {
       return { data: null, error: { message: data.error } }
     }
@@ -1009,7 +1009,7 @@ export const removeFriend = async (friendshipId) => {
       .rpc('remove_friendship', { friendship_id: friendshipId })
 
     if (error) throw error
-    
+
     if (data.error) {
       return { data: null, error: { message: data.error } }
     }
