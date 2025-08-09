@@ -347,26 +347,26 @@
               <span>{{ post.comments_count || 0 }}</span>
             </button>
 
-            <!-- Botón de solicitud de amistad -->
+            <!-- Botón de solicitud de compañerismo -->
             <button
               v-if="canSendFriendRequestToAuthor(post)"
               @click="sendFriendRequestToAuthor(post)"
               class="action-btn friend-request-btn btn-with-icon"
               :disabled="sendingFriendRequest.has(post.author_id)"
-              :title="t('sendFriendRequest')"
+              :title="t('sendCompanionRequest')"
             >
               <i class="fas fa-user-plus"></i>
-              <span>{{ t('addFriend') }}</span>
+              <span>{{ t('addCompanion') }}</span>
             </button>
 
-            <!-- Indicador de amistad existente -->
+            <!-- Indicador de compañerismo existente -->
             <div
               v-else-if="post.friendship_status === 'accepted'"
               class="friendship-indicator friend"
-              :title="t('alreadyFriends')"
+              :title="t('alreadyCompanions')"
             >
               <i class="fas fa-user-friends"></i>
-              <span>{{ t('friends') }}</span>
+              <span>{{ t('companions') }}</span>
             </div>
 
             <!-- Indicador de solicitud pendiente -->
@@ -559,8 +559,8 @@ import {
   getCurrentUser,
   getProfile,
   signOut,
-  sendFriendRequest,
-  canSendFriendRequest,
+  sendCompanionshipRequest,
+  canSendCompanionshipRequest,
   getFriendshipStatus
 } from '../lib/supabaseClient.js'
 import { useI18n } from '../composables/useI18n.js'
@@ -1009,7 +1009,7 @@ const sendFriendRequestToAuthor = async (post) => {
   sendingFriendRequest.value.add(post.author_id)
 
   try {
-    const { error } = await sendFriendRequest(post.author_id)
+    const { error } = await sendCompanionshipRequest(post.author_id)
     if (error) throw error
 
     // Actualizar el estado del post

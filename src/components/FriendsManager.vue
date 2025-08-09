@@ -201,10 +201,10 @@ import { useI18n } from '@/composables/useI18n.js'
 import UserProfileModal from './UserProfileModal.vue'
 import {
   searchUsers,
-  sendFriendRequest as sendFriendRequestAPI,
-  getPendingFriendRequests,
-  respondToFriendRequest,
-  getFriends,
+  sendCompanionshipRequest,
+  getPendingCompanionshipRequests,
+  respondToCompanionshipRequest,
+  getCompanions,
   removeFriend as removeFriendAPI,
   blockUser as blockUserAPI
 } from '@/lib/supabaseClient.js'
@@ -257,10 +257,10 @@ const sendFriendRequest = async (userId) => {
 
   pendingRequests.value.add(userId)
   try {
-    const { error } = await sendFriendRequestAPI(userId)
+    const { error } = await sendCompanionshipRequest(userId)
     if (error) throw error
 
-    showNotification(t('friendRequestSent'), 'success')
+    showNotification(t('companionRequestSent'), 'success')
 
     // Remover usuario de resultados de búsqueda
     searchResults.value = searchResults.value.filter(user => user.id !== userId)
@@ -277,10 +277,10 @@ const acceptRequest = async (requestId) => {
 
   processingRequests.value.add(requestId)
   try {
-    const { error } = await respondToFriendRequest(requestId, 'accepted')
+    const { error } = await respondToCompanionshipRequest(requestId, 'accepted')
     if (error) throw error
 
-    showNotification(t('friendRequestAccepted'), 'success')
+    showNotification(t('companionRequestAccepted'), 'success')
     await refreshData()
   } catch (error) {
     console.error('Error aceptando solicitud:', error)
@@ -295,7 +295,7 @@ const rejectRequest = async (requestId) => {
 
   processingRequests.value.add(requestId)
   try {
-    const { error } = await respondToFriendRequest(requestId, 'rejected')
+    const { error } = await respondToCompanionshipRequest(requestId, 'rejected')
     if (error) throw error
 
     showNotification(t('friendRequestRejected'), 'success')
@@ -352,7 +352,7 @@ const closeProfileModal = () => {
 // Métodos de datos
 const loadPendingRequests = async () => {
   try {
-    const { data, error } = await getPendingFriendRequests()
+    const { data, error } = await getPendingCompanionshipRequests()
     if (error) throw error
 
     pendingFriendRequests.value = data || []
@@ -363,7 +363,7 @@ const loadPendingRequests = async () => {
 
 const loadFriends = async () => {
   try {
-    const { data, error } = await getFriends()
+    const { data, error } = await getCompanions()
     if (error) throw error
 
     friends.value = data || []
