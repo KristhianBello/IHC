@@ -505,6 +505,51 @@ export const getPosts = async () => {
   }
 }
 
+// Nueva función para obtener posts priorizados (amigos primero)
+export const getPrioritizedPosts = async (limit = 10, offset = 0) => {
+  try {
+    console.log('Obteniendo posts priorizados desde Supabase')
+    
+    const { data, error } = await supabase.rpc('get_prioritized_posts', {
+      page_limit: limit,
+      page_offset: offset
+    })
+
+    if (error) {
+      console.error('Error al obtener posts priorizados:', error)
+      // Fallback a posts normales si hay error
+      return getPosts()
+    }
+
+    return { data: data || [], error: null }
+  } catch (err) {
+    console.error('Error en getPrioritizedPosts:', err)
+    // Fallback a posts normales si hay error
+    return getPosts()
+  }
+}
+
+// Función para verificar si se puede enviar solicitud de amistad
+export const canSendFriendRequest = async (targetUserId) => {
+  try {
+    console.log('Verificando si se puede enviar solicitud de amistad a:', targetUserId)
+    
+    const { data, error } = await supabase.rpc('can_send_friend_request', {
+      target_user_id: targetUserId
+    })
+
+    if (error) {
+      console.error('Error al verificar solicitud de amistad:', error)
+      return { data: false, error }
+    }
+
+    return { data: data || false, error: null }
+  } catch (err) {
+    console.error('Error en canSendFriendRequest:', err)
+    return { data: false, error: err }
+  }
+}
+
 export const deletePost = async (postId) => {
   console.log('Simulando eliminar post:', postId)
 

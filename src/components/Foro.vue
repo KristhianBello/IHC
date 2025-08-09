@@ -346,6 +346,38 @@
               <i class="fas fa-comment"></i>
               <span>{{ post.comments_count || 0 }}</span>
             </button>
+
+            <!-- Botón de solicitud de amistad -->
+            <button
+              v-if="canSendFriendRequestToAuthor(post)"
+              @click="sendFriendRequestToAuthor(post)"
+              class="action-btn friend-request-btn btn-with-icon"
+              :disabled="sendingFriendRequest.has(post.author_id)"
+              :title="t('sendFriendRequest')"
+            >
+              <i class="fas fa-user-plus"></i>
+              <span>{{ t('addFriend') }}</span>
+            </button>
+
+            <!-- Indicador de amistad existente -->
+            <div
+              v-else-if="post.friendship_status === 'accepted'"
+              class="friendship-indicator friend"
+              :title="t('alreadyFriends')"
+            >
+              <i class="fas fa-user-friends"></i>
+              <span>{{ t('friends') }}</span>
+            </div>
+
+            <!-- Indicador de solicitud pendiente -->
+            <div
+              v-else-if="post.friendship_status === 'pending'"
+              class="friendship-indicator pending"
+              :title="t('friendRequestPending')"
+            >
+              <i class="fas fa-clock"></i>
+              <span>{{ t('pending') }}</span>
+            </div>
           </div>
 
           <!-- Sección de comentarios -->
@@ -516,6 +548,7 @@ import MapSelector from './MapSelector.vue'
 import {
   createPost,
   getPosts,
+  getPrioritizedPosts,
   toggleLike,
   checkUserLike,
   updatePost as updatePostAPI,
@@ -525,7 +558,10 @@ import {
   subscribeToPostUpdates,
   getCurrentUser,
   getProfile,
-  signOut
+  signOut,
+  sendFriendRequest,
+  canSendFriendRequest,
+  getFriendshipStatus
 } from '../lib/supabaseClient.js'
 import { useI18n } from '../composables/useI18n.js'
 import { useTheme } from '../composables/useTheme.js'
@@ -560,6 +596,7 @@ const searchTerm = ref('')
 const isSubmitting = ref(false)
 const isUpdating = ref(false)
 const likingPosts = ref(new Set())
+const sendingFriendRequest = ref(new Set())
 const subscription = ref(null)
 
 // Estados para comentarios
@@ -640,7 +677,11 @@ const initializeUser = async () => {
 const loadPosts = async () => {
   loading.value = true
   try {
-    const { data, error } = await getPosts()
+    // Usar posts priorizados si el usuario está autenticado
+    const { data, error } = currentUser.value ? 
+      await getPrioritizedPosts() : 
+      await getPosts()
+    
     if (error) throw error
 
     posts.value = data || []
@@ -649,6 +690,27 @@ const loadPosts = async () => {
     for (const post of posts.value) {
       const { data: likeData } = await checkUserLike(post.id)
       post.user_liked = likeData?.liked || false
+      
+      // Si el post viene de la función priorizadas, ya tiene toda la info
+      if (!post.author_info && post.author_id) {
+        // Para posts que no tienen info de autor, cargarla
+        try {
+          const { data: authorData } = await getProfile(post.author_id)
+          if (authorData) {
+            post.author_info = {
+              id: authorData.id,
+              nombre: authorData.nombre,
+              first_name: authorData.first_name,
+              last_name: authorData.last_name,
+              username: authorData.nombre || `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim() || authorData.email,
+              avatar_url: authorData.avatar_url,
+              city: authorData.city
+            }
+          }
+        } catch (err) {
+          console.error('Error cargando autor del post:', err)
+        }
+      }
     }
   } catch (error) {
     console.error('Error cargando publicaciones:', error)
@@ -923,6 +985,45 @@ const closeUserMenu = (event) => {
 
 const clearSearch = () => {
   searchTerm.value = ''
+}
+
+// Métodos para solicitudes de amistad
+const canSendFriendRequestToAuthor = (post) => {
+  if (!currentUser.value) return false
+  if (!post.author_id) return false
+  if (post.author_id === currentUser.value.id) return false
+  
+  // Si ya hay un estado de amistad conocido, verificar
+  if (post.friendship_status) {
+    return post.friendship_status === 'none'
+  }
+  
+  return true
+}
+
+const sendFriendRequestToAuthor = async (post) => {
+  if (!post.author_id || sendingFriendRequest.value.has(post.author_id)) return
+
+  sendingFriendRequest.value.add(post.author_id)
+
+  try {
+    const { error } = await sendFriendRequest(post.author_id)
+    if (error) throw error
+
+    // Actualizar el estado del post
+    const postIndex = posts.value.findIndex(p => p.id === post.id)
+    if (postIndex !== -1) {
+      posts.value[postIndex].friendship_status = 'pending'
+    }
+
+    // Mostrar notificación de éxito
+    showNotification(t('friendRequestSent'), 'success')
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error)
+    showNotification(t('errorSendingFriendRequest'), 'error')
+  } finally {
+    sendingFriendRequest.value.delete(post.author_id)
+  }
 }
 
 const handleLogout = async () => {
@@ -1727,6 +1828,42 @@ onUnmounted(() => {
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Botones específicos de amistad */
+.friend-request-btn {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.friend-request-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.friendship-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.friendship-indicator.friend {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.friendship-indicator.pending {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: #fbbf24;
+  color: #f59e0b;
 }
 
 /* Comentarios */

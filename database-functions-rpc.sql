@@ -342,6 +342,138 @@ BEGIN
 END;
 $$;
 
+-- Función para obtener posts priorizando a los amigos
+CREATE OR REPLACE FUNCTION get_prioritized_posts(page_limit integer DEFAULT 10, page_offset integer DEFAULT 0)
+RETURNS TABLE (
+  id uuid,
+  title text,
+  content text,
+  location text,
+  coordinates jsonb,
+  author_id uuid,
+  author_info json,
+  likes_count integer,
+  comments_count integer,
+  is_liked boolean,
+  friendship_status text,
+  is_friend boolean,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH user_friends AS (
+    -- Obtener IDs de amigos del usuario actual
+    SELECT 
+      CASE 
+        WHEN uf.requester_id = auth.uid() THEN uf.addressee_id
+        ELSE uf.requester_id
+      END as friend_id
+    FROM public.user_friendships uf
+    WHERE 
+      (uf.requester_id = auth.uid() OR uf.addressee_id = auth.uid()) 
+      AND uf.status = 'accepted'
+  ),
+  posts_with_priority AS (
+    SELECT 
+      p.*,
+      CASE 
+        WHEN uf.friend_id IS NOT NULL THEN 1  -- Posts de amigos tienen prioridad 1
+        ELSE 2  -- Posts de no amigos tienen prioridad 2
+      END as priority_order,
+      CASE 
+        WHEN uf.friend_id IS NOT NULL THEN true
+        ELSE false
+      END as is_friend_post
+    FROM public.posts p
+    LEFT JOIN user_friends uf ON p.author_id = uf.friend_id
+    WHERE p.author_id != COALESCE(auth.uid(), '00000000-0000-0000-0000-000000000000'::uuid)
+    ORDER BY priority_order ASC, p.created_at DESC
+    LIMIT page_limit OFFSET page_offset
+  )
+  SELECT 
+    pwp.id,
+    pwp.title,
+    pwp.content,
+    pwp.location,
+    pwp.coordinates,
+    pwp.author_id,
+    json_build_object(
+      'id', prof.id,
+      'nombre', prof.nombre,
+      'first_name', prof.first_name,
+      'last_name', prof.last_name,
+      'username', COALESCE(prof.nombre, prof.first_name || ' ' || prof.last_name, prof.first_name, prof.email),
+      'avatar_url', prof.avatar_url,
+      'city', prof.city
+    ) as author_info,
+    pwp.likes_count,
+    pwp.comments_count,
+    CASE 
+      WHEN pl.id IS NOT NULL THEN true
+      ELSE false
+    END as is_liked,
+    COALESCE(
+      (SELECT status FROM public.user_friendships 
+       WHERE (requester_id = auth.uid() AND addressee_id = pwp.author_id) 
+          OR (requester_id = pwp.author_id AND addressee_id = auth.uid())
+       LIMIT 1), 
+      'none'
+    ) as friendship_status,
+    pwp.is_friend_post as is_friend,
+    pwp.created_at,
+    pwp.updated_at
+  FROM posts_with_priority pwp
+  JOIN public.profiles prof ON prof.id = pwp.author_id
+  LEFT JOIN public.post_likes pl ON pl.post_id = pwp.id AND pl.user_id = auth.uid()
+  ORDER BY pwp.priority_order ASC, pwp.created_at DESC;
+END;
+$$;
+
+-- Función para verificar si un usuario puede enviar solicitud de amistad
+CREATE OR REPLACE FUNCTION can_send_friend_request(target_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  existing_friendship public.user_friendships;
+  privacy_settings public.profile_privacy_settings;
+BEGIN
+  -- Verificar que no sea el mismo usuario
+  IF target_user_id = auth.uid() THEN
+    RETURN false;
+  END IF;
+
+  -- Verificar configuración de privacidad
+  SELECT * INTO privacy_settings 
+  FROM public.profile_privacy_settings 
+  WHERE user_id = target_user_id;
+
+  -- Si no permite solicitudes de amistad
+  IF privacy_settings.allow_friend_requests = false THEN
+    RETURN false;
+  END IF;
+
+  -- Verificar si ya existe una relación
+  SELECT * INTO existing_friendship
+  FROM public.user_friendships 
+  WHERE 
+    (requester_id = auth.uid() AND addressee_id = target_user_id) OR
+    (requester_id = target_user_id AND addressee_id = auth.uid());
+
+  -- Si ya existe una relación, no se puede enviar solicitud
+  IF existing_friendship.id IS NOT NULL THEN
+    RETURN false;
+  END IF;
+
+  RETURN true;
+END;
+$$;
+
 -- Conceder permisos de ejecución a usuarios autenticados
 GRANT EXECUTE ON FUNCTION search_users(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_friends() TO authenticated;
@@ -352,3 +484,5 @@ GRANT EXECUTE ON FUNCTION get_friendship_status(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION remove_friendship(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION block_user(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_public_profile(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_prioritized_posts(integer, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION can_send_friend_request(uuid) TO authenticated;

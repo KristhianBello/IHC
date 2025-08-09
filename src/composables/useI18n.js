@@ -208,6 +208,10 @@ const translations = {
     errorRemovingFriend: "Error al eliminar amigo",
     userBlockedSuccess: "Usuario bloqueado exitosamente",
     errorBlockingUser: "Error al bloquear usuario",
+    
+    // Nuevas traducciones para publicaciones
+    alreadyFriends: "Ya son amigos",
+    friendRequestPending: "Solicitud pendiente",
     confirmRemoveFriend: "¿Estás seguro de que quieres eliminar a este amigo?",
     confirmBlockUser: "¿Estás seguro de que quieres bloquear a este usuario?",
     errorSearchingUsers: "Error al buscar usuarios",
@@ -421,6 +425,10 @@ const translations = {
     confirmRemoveFriend: "Are you sure you want to remove this friend?",
     confirmBlockUser: "Are you sure you want to block this user?",
     errorSearchingUsers: "Error searching users",
+    
+    // Nuevas traducciones para publicaciones
+    alreadyFriends: "Already friends",
+    friendRequestPending: "Friend request pending",
   },
 }
 

@@ -43,6 +43,8 @@
    - ✅ `remove_friendship`
    - ✅ `block_user`
    - ✅ `get_public_profile`
+   - ✅ `get_prioritized_posts` (nueva - prioriza publicaciones de amigos)
+   - ✅ `can_send_friend_request` (nueva - verifica si se puede enviar solicitud)
 
 ### 5. **Configurar Variables de Entorno**
    Asegúrate de que tu archivo `.env` tenga:
@@ -87,3 +89,6 @@ Una vez completados todos los pasos, deberías poder:
 - ✅ Ver perfiles de otros usuarios
 - ✅ Gestionar tu lista de amigos
 - ✅ Eliminar amistades
+- ✅ **Nuevo: Ver botón "Agregar amigo" en publicaciones de otros usuarios**
+- ✅ **Nuevo: Las publicaciones de tus amigos aparecen primero en el feed**
+- ✅ **Nuevo: Indicadores de estado de amistad en publicaciones**
