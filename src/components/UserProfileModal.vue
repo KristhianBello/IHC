@@ -153,7 +153,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['close', 'friendship-updated'])
+const emit = defineEmits(['close', 'friendship-updated', 'companionship-updated'])
 
 // Estado
 const loading = ref(false)
@@ -190,6 +190,7 @@ const sendFriendRequest = async () => {
 
     friendshipStatus.value = 'pending'
     emit('friendship-updated')
+    emit('companionship-updated')
     showNotification(t('friendRequestSent'), 'success')
   } catch (error) {
     console.error('Error enviando solicitud:', error)
@@ -208,6 +209,7 @@ const removeFriend = async () => {
 
     friendshipStatus.value = 'none'
     emit('friendship-updated')
+    emit('companionship-updated')
     showNotification(t('friendRemoved'), 'success')
   } catch (error) {
     console.error('Error eliminando amigo:', error)
@@ -224,6 +226,7 @@ const blockUser = async () => {
 
     friendshipStatus.value = 'blocked'
     emit('friendship-updated')
+    emit('companionship-updated')
     showNotification(t('userBlockedSuccess'), 'success')
   } catch (error) {
     console.error('Error bloqueando usuario:', error)

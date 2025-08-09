@@ -1,5 +1,5 @@
 <template>
-  <div class="user-search-container">
+  <div class="companions-manager-container">
     <!-- Barra de búsqueda -->
     <div class="search-section">
       <div class="search-input-wrapper">
@@ -54,12 +54,12 @@
           </div>
           <div class="user-actions">
             <button
-              @click.stop="sendFriendRequest(user.id)"
+              @click.stop="sendCompanionRequest(user.id)"
               class="btn btn-sm btn-primary"
               :disabled="pendingRequests.has(user.id)"
             >
               <i class="fas fa-user-plus"></i>
-              {{ pendingRequests.has(user.id) ? t('sending') : t('addFriend') }}
+              {{ pendingRequests.has(user.id) ? t('sending') : t('addCompanion') }}
             </button>
           </div>
         </div>
@@ -79,20 +79,20 @@
     </div>
 
     <!-- Solicitudes pendientes -->
-    <div v-if="pendingFriendRequests.length > 0" class="pending-requests-section">
-      <h3>{{ t('pendingRequests') }} ({{ pendingFriendRequests.length }})</h3>
+    <div v-if="pendingCompanionRequests.length > 0" class="pending-requests-section">
+      <h3>{{ t('pendingCompanionRequests') }} ({{ pendingCompanionRequests.length }})</h3>
       <div class="requests-list">
         <div
-          v-for="request in pendingFriendRequests"
+          v-for="request in pendingCompanionRequests"
           :key="request.id"
           class="request-card"
         >
           <div class="request-user">
             <div class="user-avatar">
               <img
-                v-if="request.requester?.avatar_url"
-                :src="request.requester.avatar_url"
-                :alt="request.requester.nombre"
+                v-if="request.requester_avatar_url"
+                :src="request.requester_avatar_url"
+                :alt="request.requester_name"
                 class="avatar-image"
               />
               <div v-else class="avatar-placeholder">
@@ -101,7 +101,7 @@
             </div>
             <div class="user-info">
               <h4 class="user-name">
-                {{ request.requester?.nombre || `${request.requester?.first_name || ''} ${request.requester?.last_name || ''}`.trim() || 'Usuario' }}
+                {{ request.requester_name || 'Usuario' }}
               </h4>
               <p class="request-date">
                 {{ t('requestedOn') }} {{ formatDate(request.created_at) }}
@@ -138,21 +138,21 @@
       </div>
     </div>
 
-    <!-- Lista de amigos -->
-    <div v-if="friends.length > 0" class="friends-section">
-      <h3>{{ t('myFriends') }} ({{ friends.length }})</h3>
-      <div class="friends-grid">
+    <!-- Lista de compañeros -->
+    <div v-if="companions.length > 0" class="companions-section">
+      <h3>{{ t('myCompanions') }} ({{ companions.length }})</h3>
+      <div class="companions-grid">
         <div
-          v-for="friend in friends"
-          :key="friend.friend_id"
-          class="friend-card"
-          @click="viewProfile(friend.friend_id)"
+          v-for="companion in companions"
+          :key="companion.companion_id"
+          class="companion-card"
+          @click="viewProfile(companion.companion_id)"
         >
           <div class="user-avatar">
             <img
-              v-if="friend.friend_avatar"
-              :src="friend.friend_avatar"
-              :alt="friend.friend_name"
+              v-if="companion.companion_avatar_url"
+              :src="companion.companion_avatar_url"
+              :alt="companion.companion_name"
               class="avatar-image"
             />
             <div v-else class="avatar-placeholder">
@@ -160,16 +160,16 @@
             </div>
           </div>
           <div class="user-info">
-            <h4 class="user-name">{{ friend.friend_name || 'Usuario' }}</h4>
-            <p class="friendship-date">
-              {{ t('friendsSince') }} {{ formatDate(friend.friendship_date) }}
+            <h4 class="user-name">{{ companion.companion_name || 'Usuario' }}</h4>
+            <p class="companionship-date">
+              {{ t('companionsSince') }} {{ formatDate(companion.companionship_date) }}
             </p>
           </div>
-          <div class="friend-actions">
+          <div class="companion-actions">
             <button
-              @click.stop="removeFriend(friend.friend_id)"
+              @click.stop="removeCompanion(companion.companion_id)"
               class="btn btn-sm btn-outline btn-danger"
-              :title="t('removeFriend')"
+              :title="t('removeCompanion')"
             >
               <i class="fas fa-user-minus"></i>
             </button>
@@ -179,18 +179,18 @@
     </div>
 
     <!-- Estado vacío -->
-    <div v-if="!searchTerm && friends.length === 0 && pendingFriendRequests.length === 0" class="empty-state">
+    <div v-if="!searchTerm && companions.length === 0 && pendingCompanionRequests.length === 0" class="empty-state">
       <i class="fas fa-users"></i>
-      <h3>{{ t('noFriendsYet') }}</h3>
+      <h3>{{ t('noCompanionsYet') }}</h3>
       <p>{{ t('searchUsersToConnect') }}</p>
     </div>
 
     <!-- Modal de perfil -->
     <UserProfileModal
-      :user-id="selectedUserId"
+      :user-id="selectedUserId || ''"
       :is-visible="showProfileModal"
       @close="closeProfileModal"
-      @friendship-updated="refreshData"
+      @companionship-updated="refreshData"
     />
   </div>
 </template>
@@ -217,8 +217,8 @@ const searchResults = ref([])
 const searching = ref(false)
 const pendingRequests = ref(new Set())
 const processingRequests = ref(new Set())
-const pendingFriendRequests = ref([])
-const friends = ref([])
+const pendingCompanionRequests = ref([])
+const companions = ref([])
 
 // Modal de perfil
 const showProfileModal = ref(false)
@@ -251,8 +251,8 @@ const clearSearch = () => {
   searchResults.value = []
 }
 
-// Métodos de amistad
-const sendFriendRequest = async (userId) => {
+// Métodos de compañerismo
+const sendCompanionRequest = async (userId) => {
   if (pendingRequests.value.has(userId)) return
 
   pendingRequests.value.add(userId)
@@ -260,13 +260,13 @@ const sendFriendRequest = async (userId) => {
     const { error } = await sendCompanionshipRequest(userId)
     if (error) throw error
 
-    showNotification(t('companionRequestSent'), 'success')
+    showNotification(t('companionRequestSent') || 'Solicitud de compañerismo enviada', 'success')
 
     // Remover usuario de resultados de búsqueda
     searchResults.value = searchResults.value.filter(user => user.id !== userId)
   } catch (error) {
     console.error('Error enviando solicitud:', error)
-    showNotification(t('errorSendingRequest'), 'error')
+    showNotification(t('errorSendingRequest') || 'Error enviando solicitud', 'error')
   } finally {
     pendingRequests.value.delete(userId)
   }
@@ -280,11 +280,11 @@ const acceptRequest = async (requestId) => {
     const { error } = await respondToCompanionshipRequest(requestId, 'accepted')
     if (error) throw error
 
-    showNotification(t('companionRequestAccepted'), 'success')
+    showNotification(t('companionRequestAccepted') || 'Solicitud de compañerismo aceptada', 'success')
     await refreshData()
   } catch (error) {
     console.error('Error aceptando solicitud:', error)
-    showNotification(t('errorAcceptingRequest'), 'error')
+    showNotification(t('errorAcceptingRequest') || 'Error aceptando solicitud', 'error')
   } finally {
     processingRequests.value.delete(requestId)
   }
@@ -298,48 +298,48 @@ const rejectRequest = async (requestId) => {
     const { error } = await respondToCompanionshipRequest(requestId, 'rejected')
     if (error) throw error
 
-    showNotification(t('friendRequestRejected'), 'success')
+    showNotification(t('companionRequestRejected') || 'Solicitud de compañerismo rechazada', 'success')
     await refreshData()
   } catch (error) {
     console.error('Error rechazando solicitud:', error)
-    showNotification(t('errorRejectingRequest'), 'error')
+    showNotification(t('errorRejectingRequest') || 'Error rechazando solicitud', 'error')
   } finally {
     processingRequests.value.delete(requestId)
   }
 }
 
-const removeFriend = async (friendId) => {
-  if (!confirm(t('confirmRemoveFriend'))) return
-
-  try {
-    const { error } = await removeFriendAPI(friendId)
-    if (error) throw error
-
-    showNotification(t('friendRemoved'), 'success')
-    await refreshData()
-  } catch (error) {
-    console.error('Error eliminando amigo:', error)
-    showNotification(t('errorRemovingFriend'), 'error')
-  }
-}
-
 const blockUser = async (userId) => {
-  if (!confirm(t('confirmBlockUser'))) return
-
   try {
     const { error } = await blockUserAPI(userId)
     if (error) throw error
 
-    showNotification(t('userBlockedSuccess'), 'success')
+    showNotification(t('userBlocked') || 'Usuario bloqueado', 'success')
     await refreshData()
   } catch (error) {
     console.error('Error bloqueando usuario:', error)
-    showNotification(t('errorBlockingUser'), 'error')
+    showNotification(t('errorBlockingUser') || 'Error bloqueando usuario', 'error')
+  }
+}
+
+const removeCompanion = async (companionId) => {
+  try {
+    const { error } = await removeFriendAPI(companionId)
+    if (error) throw error
+
+    showNotification(t('companionRemoved') || 'Compañero removido', 'success')
+    await refreshData()
+  } catch (error) {
+    console.error('Error removiendo compañero:', error)
+    showNotification(t('errorRemovingCompanion') || 'Error removiendo compañero', 'error')
   }
 }
 
 // Métodos del modal
 const viewProfile = (userId) => {
+  if (!userId) {
+    console.warn('User ID is null or undefined')
+    return
+  }
   selectedUserId.value = userId
   showProfileModal.value = true
 }
@@ -355,350 +355,282 @@ const loadPendingRequests = async () => {
     const { data, error } = await getPendingCompanionshipRequests()
     if (error) throw error
 
-    pendingFriendRequests.value = data || []
+    pendingCompanionRequests.value = data || []
   } catch (error) {
     console.error('Error cargando solicitudes pendientes:', error)
   }
 }
 
-const loadFriends = async () => {
+const loadCompanions = async () => {
   try {
     const { data, error } = await getCompanions()
     if (error) throw error
 
-    friends.value = data || []
+    companions.value = data || []
   } catch (error) {
-    console.error('Error cargando amigos:', error)
+    console.error('Error cargando compañeros:', error)
   }
 }
 
 const refreshData = async () => {
   await Promise.all([
     loadPendingRequests(),
-    loadFriends()
+    loadCompanions()
   ])
 }
 
-// Métodos de utilidad
+// Métodos utilitarios
 const truncateBio = (bio) => {
   if (!bio) return ''
   return bio.length > 100 ? bio.substring(0, 100) + '...' : bio
 }
 
 const formatDate = (dateString) => {
+  if (!dateString) return ''
   const date = new Date(dateString)
-  return date.toLocaleDateString()
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 }
 
 const showNotification = (message, type = 'info') => {
-  const notification = document.createElement('div')
-  notification.className = `notification notification-${type}`
-  notification.textContent = message
-
-  let backgroundColor = '#3b82f6'
-  if (type === 'error') backgroundColor = '#ef4444'
-  if (type === 'success') backgroundColor = '#22c55e'
-
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 24px;
-    border-radius: 8px;
-    color: white;
-    background: ${backgroundColor};
-    z-index: 1001;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    animation: slideIn 0.3s ease;
-  `
-
-  document.body.appendChild(notification)
-
-  setTimeout(() => {
-    notification.style.transform = 'translateX(100%)'
-    setTimeout(() => notification.remove(), 300)
-  }, 3000)
+  console.log(`[${type.toUpperCase()}] ${message}`)
+  // Aquí podrías integrar un sistema de notificaciones como toast
 }
 
-// Lifecycle
+// Inicialización
 onMounted(() => {
   refreshData()
 })
 </script>
 
 <style scoped>
-.user-search-container {
-  max-width: 800px;
+.companions-manager-container {
+  padding: 20px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
 }
 
 .search-section {
-  margin-bottom: 2rem;
+  margin-bottom: 30px;
 }
 
 .search-input-wrapper {
   position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.875rem 3rem 0.875rem 2.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 1rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px var(--primary-green-light);
+  max-width: 400px;
 }
 
 .search-icon {
   position: absolute;
-  left: 0.875rem;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
-  font-size: 1rem;
+  color: #666;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 45px 12px 40px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
 }
 
 .clear-search-btn {
   position: absolute;
-  right: 0.875rem;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: #666;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s;
+  padding: 5px;
 }
 
-.clear-search-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
-
-.search-results,
-.pending-requests-section,
-.friends-section {
-  margin-bottom: 2rem;
-}
-
-.search-results h3,
-.pending-requests-section h3,
-.friends-section h3 {
-  margin: 0 0 1rem 0;
-  color: var(--text-primary);
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.users-grid,
-.friends-grid {
+.users-grid, .companions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
 }
 
-.user-card,
-.friend-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+.user-card, .companion-card {
+  background: white;
+  border: 1px solid #e1e5e9;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.user-card:hover,
-.friend-card:hover {
-  border-color: var(--primary-green);
+.user-card:hover, .companion-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.request-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.requests-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.request-user {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .user-avatar {
-  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 15px;
 }
 
 .avatar-image {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .avatar-placeholder {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: var(--primary-green-light);
+  background: #f8f9fa;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-green);
-  font-size: 1.25rem;
-}
-
-.user-info {
-  flex: 1;
-  min-width: 0;
+  color: #666;
+  font-size: 24px;
 }
 
 .user-name {
-  margin: 0 0 0.25rem 0;
-  color: var(--text-primary);
-  font-size: 1rem;
+  margin: 0 0 8px 0;
+  font-size: 18px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #2c3e50;
 }
 
-.user-location,
-.user-bio,
-.request-date,
-.friendship-date {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.4;
+.user-location, .user-bio {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
 }
 
-.user-location {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.user-bio {
-  margin-top: 0.25rem;
-}
-
-.user-actions,
-.friend-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.request-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-shrink: 0;
+.user-actions, .companion-actions {
+  margin-top: 15px;
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  font-size: 0.875rem;
-}
-
-.btn-sm {
-  padding: 0.375rem 0.625rem;
-  font-size: 0.75rem;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-primary {
-  background: var(--primary-green);
+  background: #007bff;
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-green-hover);
-}
-
-.btn-primary:disabled {
-  background: var(--gray-300);
-  cursor: not-allowed;
+  background: #0056b3;
 }
 
 .btn-success {
-  background: #22c55e;
+  background: #28a745;
   color: white;
 }
 
 .btn-success:hover:not(:disabled) {
-  background: #16a34a;
+  background: #1e7e34;
 }
 
 .btn-outline {
   background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid #dee2e6;
+  color: #6c757d;
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: var(--bg-secondary);
+  background: #f8f9fa;
 }
 
 .btn-danger {
-  border-color: #ef4444;
-  color: #ef4444;
+  background: #dc3545;
+  color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.1);
+  background: #c82333;
 }
 
-.loading-state,
-.no-results,
-.empty-state {
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pending-requests-section, .companions-section {
+  margin: 40px 0;
+}
+
+.pending-requests-section h3, .companions-section h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.request-card {
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.request-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.companionship-date, .request-date {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.loading-state {
   text-align: center;
-  padding: 3rem 1rem;
-  color: var(--text-secondary);
+  padding: 40px;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--border-color);
-  border-top: 3px solid var(--primary-green);
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+  margin: 0 auto 15px;
 }
 
 @keyframes spin {
@@ -706,57 +638,25 @@ onMounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-.empty-state i,
-.no-results i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
+.no-results, .empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.no-results i, .empty-state i {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color: #dee2e6;
 }
 
 .empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
+  margin: 0 0 10px 0;
+  color: #2c3e50;
 }
 
-/* Variables CSS */
-:root {
-  --primary-green: #059669;
-  --primary-green-hover: #047857;
-  --primary-green-light: #d1fae5;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
-  --gray-300: #d1d5db;
-}
-
-[data-theme="dark"] {
-  --bg-primary: #1f2937;
-  --bg-secondary: #374151;
-  --text-primary: #ffffff;
-  --text-secondary: #d1d5db;
-  --border-color: #4b5563;
-  --gray-300: #6b7280;
-}
-
-@media (max-width: 768px) {
-  .users-grid,
-  .friends-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .request-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .request-actions {
-    justify-content: stretch;
-  }
-
-  .request-actions .btn {
-    flex: 1;
-  }
+.empty-state p {
+  margin: 0;
+  color: #666;
 }
 </style>

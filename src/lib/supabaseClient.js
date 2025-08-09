@@ -1032,13 +1032,14 @@ export const getFriends = async () => {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
+    // Usar la nueva función de compañerismo
     const { data, error } = await supabase
-      .rpc('get_user_friends')
+      .rpc('get_current_companions')
 
     if (error) throw error
     return { data, error: null }
   } catch (error) {
-    console.error('Error obteniendo amigos:', error)
+    console.error('Error obteniendo compañeros:', error)
     return { data: null, error }
   }
 }
@@ -1254,10 +1255,64 @@ export const sendCompanionshipRequest = async (addresseeId) => {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
+    // Intentar usar la función RPC primero
     const { data, error } = await supabase
       .rpc('send_companionship_request', { target_user_id: addresseeId })
 
-    if (error) throw error
+    if (error) {
+      console.warn('RPC send_companionship_request no encontrada, usando fallback:', error)
+
+      // Verificar que no sea el mismo usuario
+      if (currentUser.id === addresseeId) {
+        throw new Error('No puedes enviarte una solicitud a ti mismo')
+      }
+
+      // Verificar si ya existe una relación
+      const { data: existing } = await supabase
+        .from('user_companionships')
+        .select('*')
+        .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${currentUser.id})`)
+        .single()
+
+      if (existing) {
+        throw new Error('Ya existe una relación de compañerismo')
+      }
+
+      // Crear nueva solicitud
+      const { data: newRequest, error: insertError } = await supabase
+        .from('user_companionships')
+        .insert({
+          requester_id: currentUser.id,
+          addressee_id: addresseeId,
+          status: 'pending'
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      // Crear notificaciones (si la tabla existe)
+      try {
+        await supabase
+          .from('companionship_notifications')
+          .insert([
+            {
+              user_id: currentUser.id,
+              companionship_id: newRequest.id,
+              type: 'request_sent'
+            },
+            {
+              user_id: addresseeId,
+              companionship_id: newRequest.id,
+              type: 'request_received'
+            }
+          ])
+      } catch (notifError) {
+        console.warn('No se pudieron crear notificaciones:', notifError)
+      }
+
+      return { data: { success: true, companionship: newRequest }, error: null }
+    }
 
     if (data.error) {
       return { data: null, error: { message: data.error } }
@@ -1273,13 +1328,65 @@ export const sendCompanionshipRequest = async (addresseeId) => {
 // Responder a solicitud de compañerismo
 export const respondToCompanionshipRequest = async (companionshipId, response) => {
   try {
+    // Intentar usar la función RPC primero
     const { data, error } = await supabase
       .rpc('respond_to_companionship_request', {
         companionship_id: companionshipId,
         response: response
       })
 
-    if (error) throw error
+    if (error) {
+      console.warn('RPC respond_to_companionship_request no encontrada, usando fallback:', error)
+
+      const currentUser = await getCurrentUser()
+      if (!currentUser) throw new Error('Usuario no autenticado')
+
+      // Validar respuesta
+      if (!['accepted', 'rejected'].includes(response)) {
+        throw new Error('Respuesta inválida')
+      }
+
+      // Obtener la solicitud
+      const { data: companionship, error: fetchError } = await supabase
+        .from('user_companionships')
+        .select('*')
+        .eq('id', companionshipId)
+        .eq('addressee_id', currentUser.id)
+        .eq('status', 'pending')
+        .single()
+
+      if (fetchError || !companionship) {
+        throw new Error('Solicitud no encontrada o no tienes permisos')
+      }
+
+      // Actualizar el estado
+      const { error: updateError } = await supabase
+        .from('user_companionships')
+        .update({
+          status: response,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', companionshipId)
+
+      if (updateError) throw updateError
+
+      // Crear notificación (si la tabla existe)
+      try {
+        const notificationType = response === 'accepted' ? 'request_accepted' : 'request_rejected'
+        await supabase
+          .from('companionship_notifications')
+          .insert({
+            user_id: companionship.requester_id,
+            companionship_id: companionshipId,
+            type: notificationType
+          })
+      } catch (notifError) {
+        console.warn('No se pudo crear notificación:', notifError)
+      }
+
+      return { data: { success: true, status: response }, error: null }
+    }
+
     return { data, error: null }
   } catch (error) {
     console.error('Error respondiendo solicitud de compañerismo:', error)
@@ -1293,9 +1400,40 @@ export const getPendingCompanionshipRequests = async () => {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
+    // Intentar usar la función RPC primero
     const { data, error } = await supabase.rpc('get_pending_companionship_requests')
 
-    if (error) throw error
+    if (error) {
+      console.warn('RPC get_pending_companionship_requests no encontrada, usando fallback:', error)
+
+      // Fallback: consultar directamente la tabla
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_companionships')
+        .select(`
+          id,
+          requester_id,
+          created_at,
+          requester:profiles!requester_id(id, nombre, first_name, email, avatar_url)
+        `)
+        .eq('addressee_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+
+      if (fallbackError) throw fallbackError
+
+      // Transformar los datos al formato esperado
+      const transformedData = fallbackData?.map(req => ({
+        id: req.id,
+        requester_id: req.requester_id,
+        created_at: req.created_at,
+        requester_name: req.requester?.nombre || req.requester?.first_name || req.requester?.email || 'Usuario',
+        requester_email: req.requester?.email,
+        requester_avatar_url: req.requester?.avatar_url
+      })) || []
+
+      return { data: transformedData, error: null }
+    }
+
     return { data, error: null }
   } catch (error) {
     console.error('Error obteniendo solicitudes pendientes de compañerismo:', error)
@@ -1309,9 +1447,43 @@ export const getCompanions = async () => {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
+    // Intentar usar la función RPC primero
     const { data, error } = await supabase.rpc('get_current_companions')
 
-    if (error) throw error
+    if (error) {
+      console.warn('RPC get_current_companions no encontrada, usando fallback con tabla:', error)
+
+      // Fallback: consultar directamente la tabla
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_companionships')
+        .select(`
+          id,
+          requester_id,
+          addressee_id,
+          created_at,
+          requester:profiles!requester_id(id, nombre, first_name, email, avatar_url),
+          addressee:profiles!addressee_id(id, nombre, first_name, email, avatar_url)
+        `)
+        .or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false })
+
+      if (fallbackError) throw fallbackError
+
+      // Transformar los datos al formato esperado
+      const transformedData = fallbackData?.map(comp => ({
+        companion_id: comp.requester_id === currentUser.id ? comp.addressee_id : comp.requester_id,
+        companion_name: comp.requester_id === currentUser.id
+          ? (comp.addressee?.nombre || comp.addressee?.first_name || comp.addressee?.email || 'Usuario')
+          : (comp.requester?.nombre || comp.requester?.first_name || comp.requester?.email || 'Usuario'),
+        companion_email: comp.requester_id === currentUser.id ? comp.addressee?.email : comp.requester?.email,
+        companion_avatar_url: comp.requester_id === currentUser.id ? comp.addressee?.avatar_url : comp.requester?.avatar_url,
+        companionship_date: comp.created_at
+      })) || []
+
+      return { data: transformedData, error: null }
+    }
+
     return { data, error: null }
   } catch (error) {
     console.error('Error obteniendo compañeros:', error)
