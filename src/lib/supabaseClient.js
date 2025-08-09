@@ -854,10 +854,7 @@ export const removeCompanion = async (companionId) => {
 export const searchUsers = async (searchTerm) => {
   try {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, nombre, first_name, last_name, email, avatar_url, bio, city')
-      .or(`nombre.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-      .limit(10)
+      .rpc('search_users', { search_term: searchTerm })
 
     if (error) throw error
     return { data, error: null }
@@ -870,33 +867,16 @@ export const searchUsers = async (searchTerm) => {
 // Obtener perfil público de un usuario
 export const getPublicProfile = async (userId) => {
   try {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await supabase
+      .rpc('get_public_profile', { user_id: userId })
 
-    if (profileError) throw profileError
-
-    // Obtener configuración de privacidad
-    const { data: privacy } = await supabase
-      .from('profile_privacy_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    // Aplicar filtros de privacidad
-    const filteredProfile = { ...profile }
-    if (privacy) {
-      if (!privacy.show_email) delete filteredProfile.email
-      if (!privacy.show_phone) delete filteredProfile.phone
-      if (!privacy.show_address) delete filteredProfile.address
-      if (!privacy.show_interests) delete filteredProfile.interests
-      if (!privacy.show_skills) delete filteredProfile.skills
-      if (!privacy.show_bio) delete filteredProfile.bio
+    if (error) throw error
+    
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
     }
 
-    return { data: filteredProfile, error: null }
+    return { data, error: null }
   } catch (error) {
     console.error('Error obteniendo perfil público:', error)
     return { data: null, error }
@@ -909,38 +889,14 @@ export const sendFriendRequest = async (addresseeId) => {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
-    // Verificar si ya existe una relación
-    const { data: existing } = await supabase
-      .from('user_friendships')
-      .select('*')
-      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${currentUser.id})`)
-      .single()
-
-    if (existing) {
-      return { data: null, error: { message: 'Ya existe una relación con este usuario' } }
-    }
-
-    // Crear solicitud de amistad
     const { data, error } = await supabase
-      .from('user_friendships')
-      .insert({
-        requester_id: currentUser.id,
-        addressee_id: addresseeId,
-        status: 'pending'
-      })
-      .select()
-      .single()
+      .rpc('send_friend_request', { addressee_user_id: addresseeId })
 
     if (error) throw error
-
-    // Crear notificación
-    await supabase
-      .from('friendship_notifications')
-      .insert({
-        user_id: addresseeId,
-        friendship_id: data.id,
-        type: 'friend_request'
-      })
+    
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
 
     return { data, error: null }
   } catch (error) {
@@ -1010,14 +966,13 @@ export const getPendingFriendRequests = async () => {
 }
 
 // Obtener lista de amigos
-export const getFriends = async (userId = null) => {
+export const getFriends = async () => {
   try {
     const currentUser = await getCurrentUser()
-    const targetUserId = userId || currentUser?.id
-    if (!targetUserId) throw new Error('Usuario no especificado')
+    if (!currentUser) throw new Error('Usuario no autenticado')
 
     const { data, error } = await supabase
-      .rpc('get_user_friends', { target_user_id: targetUserId })
+      .rpc('get_user_friends')
 
     if (error) throw error
     return { data, error: null }
@@ -1034,10 +989,7 @@ export const getFriendshipStatus = async (otherUserId) => {
     if (!currentUser) return { data: 'none', error: null }
 
     const { data, error } = await supabase
-      .rpc('get_friendship_status', {
-        user1_id: currentUser.id,
-        user2_id: otherUserId
-      })
+      .rpc('get_friendship_status', { other_user_id: otherUserId })
 
     if (error) throw error
     return { data, error: null }
@@ -1048,18 +1000,21 @@ export const getFriendshipStatus = async (otherUserId) => {
 }
 
 // Eliminar amistad
-export const removeFriend = async (friendId) => {
+export const removeFriend = async (friendshipId) => {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) throw new Error('Usuario no autenticado')
 
-    const { error } = await supabase
-      .from('user_friendships')
-      .delete()
-      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${currentUser.id})`)
+    const { data, error } = await supabase
+      .rpc('remove_friendship', { friendship_id: friendshipId })
 
     if (error) throw error
-    return { data: { success: true }, error: null }
+    
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
+
+    return { data, error: null }
   } catch (error) {
     console.error('Error eliminando amistad:', error)
     return { data: null, error }

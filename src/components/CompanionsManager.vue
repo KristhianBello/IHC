@@ -126,7 +126,7 @@
               </button>
 
               <button
-                @click="removeCompanion(companion.id, companion.nombre || companion.username)"
+                @click="removeCompanion(companion.friendship_id, companion.nombre || companion.username)"
                 class="btn btn-danger btn-sm"
                 :title="removeCompanionTitle"
               >
@@ -270,16 +270,16 @@ async function sendRequest(userId) {
   }
 }
 
-async function removeCompanion(companionId, username) {
+async function removeCompanion(friendshipId, username) {
   if (!confirm(t('confirmRemoveCompanion').replace('{username}', username))) {
     return
   }
 
   try {
-    const { error } = await removeCompanionAPI(companionId)
+    const { error } = await removeCompanionAPI(friendshipId)
     if (error) throw error
 
-    companions.value = companions.value.filter(c => c.id !== companionId)
+    companions.value = companions.value.filter(c => c.friendship_id !== friendshipId)
     showNotification(t('companionRemoved'), 'success')
   } catch (error) {
     console.error('Error eliminando compañero:', error)
