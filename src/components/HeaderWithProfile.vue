@@ -60,6 +60,15 @@
         </div>
       </div>
     </div>
+
+    <nav class="main-menu">
+      <router-link to="/foro" class="btn btn-outline">Foro</router-link>
+      <router-link to="/adopciones" class="btn btn-outline">Mis Adopciones</router-link>
+      <router-link to="/compañeros" class="btn btn-outline">Mis Compañeros</router-link>
+      <router-link to="/galeria" class="btn btn-outline">Galería</router-link>
+      <router-link to="/mapa" class="btn btn-outline">Mapa</router-link>
+      <router-link to="/sugerencias" class="btn btn-outline">Sugerencias</router-link>
+    </nav>
   </header>
 </template>
 
@@ -323,6 +332,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.main-menu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.main-menu .btn {
+  flex: 1;
+  text-align: center;
 }
 
 /* Responsive */

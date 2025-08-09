@@ -132,14 +132,7 @@
               <span>{{ t('myCompanions') }}</span>
             </router-link>
           </li>
-          <li>
-            <router-link to="/amigos" class="nav-link btn-with-icon">
-              <div class="nav-icon icon-hover-animate">
-                <i class="fas fa-user-friends"></i>
-              </div>
-              <span>{{ t('friendsAndConnections') }}</span>
-            </router-link>
-          </li>
+          
         </ul>
       </nav>
     </aside>

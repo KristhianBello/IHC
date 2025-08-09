@@ -61,11 +61,7 @@ const routes = [
     name: 'compañeros',
     component: CompanionsView,
   },
-  {
-    path: '/amigos',
-    name: 'amigos',
-    component: FriendsView,
-  },
+
   {
     path: '/galeria',
     name: 'galeria',

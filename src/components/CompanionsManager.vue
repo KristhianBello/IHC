@@ -483,7 +483,7 @@ onMounted(() => {
 <style scoped>
 .companions-layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgb(241, 240, 240);
 }
 
 .companions-container {
@@ -516,7 +516,7 @@ onMounted(() => {
 }
 
 .section-header i {
-  color: #667eea;
+  color: #52aa77;
 }
 
 .requests-list {
@@ -618,7 +618,7 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: #718096;
@@ -627,7 +627,7 @@ onMounted(() => {
 
 .search-input {
   width: 100%;
-  padding: 14px 50px 14px 45px;
+  padding: 14px 45px 14px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-size: 16px;
