@@ -678,10 +678,10 @@ const loadPosts = async () => {
   loading.value = true
   try {
     // Usar posts priorizados si el usuario está autenticado
-    const { data, error } = currentUser.value ? 
-      await getPrioritizedPosts() : 
+    const { data, error } = currentUser.value ?
+      await getPrioritizedPosts() :
       await getPosts()
-    
+
     if (error) throw error
 
     posts.value = data || []
@@ -690,7 +690,7 @@ const loadPosts = async () => {
     for (const post of posts.value) {
       const { data: likeData } = await checkUserLike(post.id)
       post.user_liked = likeData?.liked || false
-      
+
       // Si el post viene de la función priorizadas, ya tiene toda la info
       if (!post.author_info && post.author_id) {
         // Para posts que no tienen info de autor, cargarla
@@ -992,12 +992,12 @@ const canSendFriendRequestToAuthor = (post) => {
   if (!currentUser.value) return false
   if (!post.author_id) return false
   if (post.author_id === currentUser.value.id) return false
-  
+
   // Si ya hay un estado de amistad conocido, verificar
   if (post.friendship_status) {
     return post.friendship_status === 'none'
   }
-  
+
   return true
 }
 

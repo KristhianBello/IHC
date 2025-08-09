@@ -414,30 +414,37 @@ export const getProfile = async () => {
       }
     }
 
-    // Primero intentar buscar perfil en la tabla profiles
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', currentUser.email)
-      .single()
+    // Intentar buscar perfil en la tabla profiles de forma segura
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', currentUser.email)
+        .single()
 
-    if (profileData && !error) {
-      return { data: profileData, error: null }
+      if (profileData && !error) {
+        console.log('Perfil encontrado en la base de datos:', profileData)
+        return { data: profileData, error: null }
+      }
+    } catch (dbError) {
+      console.warn('No se pudo consultar la tabla profiles, usando datos del usuario:', dbError)
     }
 
-    // Si no hay perfil en la tabla, crear uno con la información disponible del usuario
+    // Si no hay perfil en la tabla o falla la consulta, crear uno con la información disponible
     const userData = registeredUsers.get(currentUser.email)
     if (userData) {
       const fallbackProfile = {
         id: currentUser.id,
         email: currentUser.email,
         username: userData.username,
+        nombre: userData.username,
         first_name: userData.username.split(' ')[0] || userData.username,
         last_name: userData.username.split(' ').slice(1).join(' ') || '',
         avatar_url: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+      console.log('Usando perfil de fallback para usuario registrado:', fallbackProfile)
       return { data: fallbackProfile, error: null }
     }
 
@@ -446,6 +453,7 @@ export const getProfile = async () => {
       id: currentUser.id,
       email: currentUser.email,
       username: currentUser.email.split('@')[0], // Usar parte del email como username
+      nombre: currentUser.email.split('@')[0],
       first_name: currentUser.email.split('@')[0],
       last_name: '',
       avatar_url: null,
@@ -509,7 +517,7 @@ export const getPosts = async () => {
 export const getPrioritizedPosts = async (limit = 10, offset = 0) => {
   try {
     console.log('Obteniendo posts priorizados desde Supabase')
-    
+
     const { data, error } = await supabase.rpc('get_prioritized_posts', {
       page_limit: limit,
       page_offset: offset
@@ -517,13 +525,16 @@ export const getPrioritizedPosts = async (limit = 10, offset = 0) => {
 
     if (error) {
       console.error('Error al obtener posts priorizados:', error)
+      console.log('Usando fallback a posts normales')
       // Fallback a posts normales si hay error
       return getPosts()
     }
 
+    console.log('Posts priorizados obtenidos exitosamente:', data?.length || 0)
     return { data: data || [], error: null }
   } catch (err) {
     console.error('Error en getPrioritizedPosts:', err)
+    console.log('Usando fallback a posts normales debido a excepción')
     // Fallback a posts normales si hay error
     return getPosts()
   }
@@ -533,7 +544,7 @@ export const getPrioritizedPosts = async (limit = 10, offset = 0) => {
 export const canSendFriendRequest = async (targetUserId) => {
   try {
     console.log('Verificando si se puede enviar solicitud de amistad a:', targetUserId)
-    
+
     const { data, error } = await supabase.rpc('can_send_friend_request', {
       target_user_id: targetUserId
     })
