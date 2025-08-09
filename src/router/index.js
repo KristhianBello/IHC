@@ -4,10 +4,12 @@ import SolicitudAdopcion from '@/components/Solicitud.vue'
 import Foro from '@/components/Foro.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import AdoptionsView from '@/views/AdoptionsView.vue'
+import MyAdoptionsView from '@/views/MyAdoptionsView.vue'
 import ReportView from '@/views/ReportView.vue'
 import TaskScheduleView from '@/views/TaskScheduleView.vue'
 import UserProfileView from '@/views/UserProfileView.vue'
 import CompanionsView from '@/views/CompanionsView.vue'
+import FriendsView from '@/views/FriendsView.vue'
 import GalleryView from '@/views/GalleryView.vue'
 import MapView from '@/views/MapView.vue'
 import SuggestionForm from '@/components/SuggestionForm.vue'
@@ -32,7 +34,7 @@ const routes = [
   {
     path: '/adopciones',
     name: 'adopciones',
-    component: AdoptionsView,
+  component: MyAdoptionsView,
   },
   {
     path: '/registro',
@@ -58,6 +60,11 @@ const routes = [
     path: '/compañeros',
     name: 'compañeros',
     component: CompanionsView,
+  },
+  {
+    path: '/amigos',
+    name: 'amigos',
+    component: FriendsView,
   },
   {
     path: '/galeria',

@@ -37,9 +37,15 @@ export const signUp = async ({ email, password, userData }) => {
     return { data: null, error }
   }
   // Crear perfil en la tabla 'profiles'
+  const nombreCompleto = userData?.nombre?.trim() || '';
+  const partesNombre = nombreCompleto.split(' ');
+  const firstName = partesNombre[0] || userData?.firstName || '';
+  const lastName = partesNombre.slice(1).join(' ') || userData?.lastName || '';
+
   const profileData = {
-    first_name: userData?.firstName || '',
-    last_name: userData?.lastName || '',
+    first_name: firstName,
+    last_name: lastName,
+    nombre: nombreCompleto || (userData?.firstName && userData?.lastName ? `${userData.firstName} ${userData.lastName}` : (userData?.firstName || '')),
     email,
     avatar_url: userData?.avatar || null,
     created_at: new Date().toISOString(),
@@ -153,7 +159,7 @@ export const addTask = async (taskData) => {
 export const updateUserProfile = async (profileData) => {
   try {
     // Buscar el perfil por email
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing } = await supabase
       .from('profiles')
       .select('id')
       .eq('email', profileData.email)
@@ -317,6 +323,8 @@ export const createPost = async (postData) => {
 
     // Agregar al "almacén" de publicaciones
     postsDatabase.unshift(newPost) // Agregar al inicio para mostrar las más recientes primero
+    console.log('Nueva publicación agregada. Total de posts:', postsDatabase.length)
+    console.log('Post agregado:', newPost)
 
     // Simular notificación WebSocket
     if (window.WebSocketSimulation) {
@@ -398,7 +406,7 @@ export const getCurrentUser = async () => {
 }
 
 // Simulación de getProfile - mejorada para usuarios reales
-export const getProfile = async (userId = null) => {
+export const getProfile = async () => {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -408,30 +416,37 @@ export const getProfile = async (userId = null) => {
       }
     }
 
-    // Primero intentar buscar perfil en la tabla profiles
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', currentUser.email)
-      .single()
+    // Intentar buscar perfil en la tabla profiles de forma segura
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', currentUser.email)
+        .single()
 
-    if (profileData && !error) {
-      return { data: profileData, error: null }
+      if (profileData && !error) {
+        console.log('Perfil encontrado en la base de datos:', profileData)
+        return { data: profileData, error: null }
+      }
+    } catch (dbError) {
+      console.warn('No se pudo consultar la tabla profiles, usando datos del usuario:', dbError)
     }
 
-    // Si no hay perfil en la tabla, crear uno con la información disponible del usuario
+    // Si no hay perfil en la tabla o falla la consulta, crear uno con la información disponible
     const userData = registeredUsers.get(currentUser.email)
     if (userData) {
       const fallbackProfile = {
         id: currentUser.id,
         email: currentUser.email,
         username: userData.username,
+        nombre: userData.username,
         first_name: userData.username.split(' ')[0] || userData.username,
         last_name: userData.username.split(' ').slice(1).join(' ') || '',
         avatar_url: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+      console.log('Usando perfil de fallback para usuario registrado:', fallbackProfile)
       return { data: fallbackProfile, error: null }
     }
 
@@ -440,6 +455,7 @@ export const getProfile = async (userId = null) => {
       id: currentUser.id,
       email: currentUser.email,
       username: currentUser.email.split('@')[0], // Usar parte del email como username
+      nombre: currentUser.email.split('@')[0],
       first_name: currentUser.email.split('@')[0],
       last_name: '',
       avatar_url: null,
@@ -490,12 +506,63 @@ export const addPost = async (postData) => {
 }
 
 export const getPosts = async () => {
-  console.log('Obteniendo publicaciones desde la base de datos')
+  console.log('=== getPosts llamado ===')
+  console.log('Posts en memoria:', postsDatabase.length)
+  console.log('Primeros posts:', postsDatabase.slice(0, 2))
+  console.log('Todos los posts:', postsDatabase)
 
   // Retornar las publicaciones almacenadas en memoria
   return {
     data: postsDatabase,
     error: null
+  }
+}
+
+// Nueva función para obtener posts priorizados (amigos primero)
+export const getPrioritizedPosts = async (limit = 10, offset = 0) => {
+  try {
+    console.log('Obteniendo posts priorizados desde Supabase')
+
+    const { data, error } = await supabase.rpc('get_prioritized_posts', {
+      page_limit: limit,
+      page_offset: offset
+    })
+
+    if (error) {
+      console.error('Error al obtener posts priorizados:', error)
+      console.log('Usando fallback a posts normales')
+      // Fallback a posts normales si hay error
+      return getPosts()
+    }
+
+    console.log('Posts priorizados obtenidos exitosamente:', data?.length || 0)
+    return { data: data || [], error: null }
+  } catch (err) {
+    console.error('Error en getPrioritizedPosts:', err)
+    console.log('Usando fallback a posts normales debido a excepción')
+    // Fallback a posts normales si hay error
+    return getPosts()
+  }
+}
+
+// Función para verificar si se puede enviar solicitud de amistad
+export const canSendFriendRequest = async (targetUserId) => {
+  try {
+    console.log('Verificando si se puede enviar solicitud de amistad a:', targetUserId)
+
+    const { data, error } = await supabase.rpc('can_send_friend_request', {
+      target_user_id: targetUserId
+    })
+
+    if (error) {
+      console.error('Error al verificar solicitud de amistad:', error)
+      return { data: false, error }
+    }
+
+    return { data: data || false, error: null }
+  } catch (err) {
+    console.error('Error en canSendFriendRequest:', err)
+    return { data: false, error: err }
   }
 }
 
@@ -737,7 +804,7 @@ export const addCompanion = async (companionId) => {
   }
 }
 
-export const getCompanions = async (userId = 'user_simulado') => {
+export const getCompanionsOld = async (userId = 'user_simulado') => {
   try {
     const { data, error } = await supabase
       .from('companions')
@@ -831,69 +898,618 @@ export const subscribeToPostUpdates = (callback) => {
   }
 }
 
-// Funciones de compañeros
-export const searchUsers = async (searchTerm) => {
-  console.log('Simulando búsqueda de usuarios:', searchTerm)
-
-  // Simular usuarios de ejemplo
-  const mockUsers = [
-    {
-      id: 1,
-      username: 'ana_lopez',
-      full_name: 'Ana López',
-      avatar_url: null,
-      is_friend: false
-    },
-    {
-      id: 2,
-      username: 'carlos_garcia',
-      full_name: 'Carlos García',
-      avatar_url: null,
-      is_friend: false
-    },
-    {
-      id: 3,
-      username: 'maria_rodriguez',
-      full_name: 'María Rodríguez',
-      avatar_url: null,
-      is_friend: true
-    }
-  ]
-
-  // Filtrar por término de búsqueda
-  const filteredUsers = mockUsers.filter(user =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  return {
-    data: filteredUsers,
-    error: null
-  }
-}
-
+// Funciones de compañeros - ACTUALIZADO para sistema completo
 export const sendCompanionRequest = async (userId) => {
-  console.log('Simulando envío de solicitud de compañero:', userId)
-
-  // Simular respuesta exitosa
-  return {
-    data: {
-      id: Date.now(),
-      user_id: 'current-user',
-      companion_id: userId,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    },
-    error: null
-  }
+  console.log('Redirigiendo a nueva función sendFriendRequest:', userId)
+  return await sendFriendRequest(userId)
 }
 
 export const removeCompanion = async (companionId) => {
-  console.log('Simulando eliminación de compañero:', companionId)
+  console.log('Redirigiendo a nueva función removeFriend:', companionId)
+  return await removeFriend(companionId)
+}
 
-  // Simular respuesta exitosa
-  return {
-    data: { success: true },
-    error: null
+// ==================== SISTEMA DE AMIGOS/COMPAÑEROS ====================
+
+// Buscar usuarios por nombre o email
+export const searchUsers = async (searchTerm) => {
+  try {
+    const { data, error } = await supabase
+      .rpc('search_users', { search_term: searchTerm })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error buscando usuarios:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener perfil público de un usuario
+export const getPublicProfile = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_public_profile', { user_id: userId })
+
+    if (error) throw error
+
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo perfil público:', error)
+    return { data: null, error }
+  }
+}
+
+// Enviar solicitud de amistad
+export const sendFriendRequest = async (addresseeId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .rpc('send_friend_request', { addressee_user_id: addresseeId })
+
+    if (error) throw error
+
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Responder a solicitud de amistad
+export const respondToFriendRequest = async (friendshipId, response) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Actualizar estado de la amistad
+    const { data, error } = await supabase
+      .from('user_friendships')
+      .update({
+        status: response, // 'accepted', 'rejected', 'blocked'
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', friendshipId)
+      .eq('addressee_id', currentUser.id) // Solo el destinatario puede responder
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Crear notificación para el solicitante
+    await supabase
+      .from('friendship_notifications')
+      .insert({
+        user_id: data.requester_id,
+        friendship_id: friendshipId,
+        type: response === 'accepted' ? 'friend_accepted' : 'friend_rejected'
+      })
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error respondiendo solicitud de amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener solicitudes de amistad pendientes
+export const getPendingFriendRequests = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('user_friendships')
+      .select(`
+        *,
+        requester:profiles!user_friendships_requester_id_fkey(id, nombre, first_name, last_name, avatar_url)
+      `)
+      .eq('addressee_id', currentUser.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo solicitudes pendientes:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener lista de amigos
+export const getFriends = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Usar la nueva función de compañerismo
+    const { data, error } = await supabase
+      .rpc('get_current_companions')
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo compañeros:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener estado de amistad entre dos usuarios
+export const getFriendshipStatus = async (otherUserId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return { data: 'none', error: null }
+
+    const { data, error } = await supabase
+      .rpc('get_friendship_status', { other_user_id: otherUserId })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo estado de amistad:', error)
+    return { data: 'none', error }
+  }
+}
+
+// Eliminar amistad
+export const removeFriend = async (friendshipId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .rpc('remove_friendship', { friendship_id: friendshipId })
+
+    if (error) throw error
+
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error eliminando amistad:', error)
+    return { data: null, error }
+  }
+}
+
+// Bloquear usuario
+export const blockUser = async (userId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Buscar relación existente
+    const { data: existing } = await supabase
+      .from('user_friendships')
+      .select('*')
+      .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${currentUser.id})`)
+      .single()
+
+    if (existing) {
+      // Actualizar a bloqueado
+      const { error } = await supabase
+        .from('user_friendships')
+        .update({ status: 'blocked' })
+        .eq('id', existing.id)
+
+      if (error) throw error
+    } else {
+      // Crear nueva relación de bloqueo
+      const { error } = await supabase
+        .from('user_friendships')
+        .insert({
+          requester_id: currentUser.id,
+          addressee_id: userId,
+          status: 'blocked'
+        })
+
+      if (error) throw error
+    }
+
+    return { data: { success: true }, error: null }
+  } catch (error) {
+    console.error('Error bloqueando usuario:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener notificaciones de amistad
+export const getFriendshipNotifications = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('friendship_notifications')
+      .select(`
+        *,
+        friendship:user_friendships(
+          *,
+          requester:profiles!user_friendships_requester_id_fkey(id, nombre, first_name, last_name, avatar_url),
+          addressee:profiles!user_friendships_addressee_id_fkey(id, nombre, first_name, last_name, avatar_url)
+        )
+      `)
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo notificaciones:', error)
+    return { data: null, error }
+  }
+}
+
+// Marcar notificación como leída
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const { error } = await supabase
+      .from('friendship_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+
+    if (error) throw error
+    return { data: { success: true }, error: null }
+  } catch (error) {
+    console.error('Error marcando notificación como leída:', error)
+    return { data: null, error }
+  }
+}
+
+// Configurar privacidad del perfil
+export const updateProfilePrivacy = async (privacySettings) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('profile_privacy_settings')
+      .upsert({
+        user_id: currentUser.id,
+        ...privacySettings,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error actualizando configuración de privacidad:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener configuración de privacidad
+export const getProfilePrivacy = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    const { data, error } = await supabase
+      .from('profile_privacy_settings')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows found
+
+    // Si no existe configuración, devolver valores por defecto
+    if (!data) {
+      const defaultSettings = {
+        profile_visibility: 'public',
+        show_email: false,
+        show_phone: false,
+        show_address: false,
+        show_interests: true,
+        show_skills: true,
+        show_bio: true,
+        allow_friend_requests: true
+      }
+      return { data: defaultSettings, error: null }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo configuración de privacidad:', error)
+    return { data: null, error }
+  }
+}
+
+// ==================== FUNCIONES DE COMPAÑERISMO ====================
+// Nuevas funciones que reemplazan las de amistad (friendship) por compañerismo (companionship)
+
+// Verificar si se puede enviar solicitud de compañerismo
+export const canSendCompanionshipRequest = async (targetUserId) => {
+  try {
+    console.log('Verificando si se puede enviar solicitud de compañerismo a:', targetUserId)
+
+    const { data, error } = await supabase.rpc('can_send_companionship_request', {
+      target_user_id: targetUserId
+    })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (err) {
+    console.error('Error en canSendCompanionshipRequest:', err)
+    console.log('Usando fallback a verificación básica')
+    // Fallback básico
+    return { data: { can_send: true }, error: null }
+  }
+}
+
+// Enviar solicitud de compañerismo
+export const sendCompanionshipRequest = async (addresseeId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Intentar usar la función RPC primero
+    const { data, error } = await supabase
+      .rpc('send_companionship_request', { target_user_id: addresseeId })
+
+    if (error) {
+      console.warn('RPC send_companionship_request no encontrada, usando fallback:', error)
+
+      // Verificar que no sea el mismo usuario
+      if (currentUser.id === addresseeId) {
+        throw new Error('No puedes enviarte una solicitud a ti mismo')
+      }
+
+      // Verificar si ya existe una relación
+      const { data: existing } = await supabase
+        .from('user_companionships')
+        .select('*')
+        .or(`and(requester_id.eq.${currentUser.id},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${currentUser.id})`)
+        .single()
+
+      if (existing) {
+        throw new Error('Ya existe una relación de compañerismo')
+      }
+
+      // Crear nueva solicitud
+      const { data: newRequest, error: insertError } = await supabase
+        .from('user_companionships')
+        .insert({
+          requester_id: currentUser.id,
+          addressee_id: addresseeId,
+          status: 'pending'
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      // Crear notificaciones (si la tabla existe)
+      try {
+        await supabase
+          .from('companionship_notifications')
+          .insert([
+            {
+              user_id: currentUser.id,
+              companionship_id: newRequest.id,
+              type: 'request_sent'
+            },
+            {
+              user_id: addresseeId,
+              companionship_id: newRequest.id,
+              type: 'request_received'
+            }
+          ])
+      } catch (notifError) {
+        console.warn('No se pudieron crear notificaciones:', notifError)
+      }
+
+      return { data: { success: true, companionship: newRequest }, error: null }
+    }
+
+    if (data.error) {
+      return { data: null, error: { message: data.error } }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error enviando solicitud de compañerismo:', error)
+    return { data: null, error }
+  }
+}
+
+// Responder a solicitud de compañerismo
+export const respondToCompanionshipRequest = async (companionshipId, response) => {
+  try {
+    // Intentar usar la función RPC primero
+    const { data, error } = await supabase
+      .rpc('respond_to_companionship_request', {
+        companionship_id: companionshipId,
+        response: response
+      })
+
+    if (error) {
+      console.warn('RPC respond_to_companionship_request no encontrada, usando fallback:', error)
+
+      const currentUser = await getCurrentUser()
+      if (!currentUser) throw new Error('Usuario no autenticado')
+
+      // Validar respuesta
+      if (!['accepted', 'rejected'].includes(response)) {
+        throw new Error('Respuesta inválida')
+      }
+
+      // Obtener la solicitud
+      const { data: companionship, error: fetchError } = await supabase
+        .from('user_companionships')
+        .select('*')
+        .eq('id', companionshipId)
+        .eq('addressee_id', currentUser.id)
+        .eq('status', 'pending')
+        .single()
+
+      if (fetchError || !companionship) {
+        throw new Error('Solicitud no encontrada o no tienes permisos')
+      }
+
+      // Actualizar el estado
+      const { error: updateError } = await supabase
+        .from('user_companionships')
+        .update({
+          status: response,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', companionshipId)
+
+      if (updateError) throw updateError
+
+      // Crear notificación (si la tabla existe)
+      try {
+        const notificationType = response === 'accepted' ? 'request_accepted' : 'request_rejected'
+        await supabase
+          .from('companionship_notifications')
+          .insert({
+            user_id: companionship.requester_id,
+            companionship_id: companionshipId,
+            type: notificationType
+          })
+      } catch (notifError) {
+        console.warn('No se pudo crear notificación:', notifError)
+      }
+
+      return { data: { success: true, status: response }, error: null }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error respondiendo solicitud de compañerismo:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener solicitudes de compañerismo pendientes
+export const getPendingCompanionshipRequests = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Intentar usar la función RPC primero
+    const { data, error } = await supabase.rpc('get_pending_companionship_requests')
+
+    if (error) {
+      console.warn('RPC get_pending_companionship_requests no encontrada, usando fallback:', error)
+
+      // Fallback: consultar directamente la tabla
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_companionships')
+        .select(`
+          id,
+          requester_id,
+          created_at,
+          requester:profiles!requester_id(id, nombre, first_name, email, avatar_url)
+        `)
+        .eq('addressee_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+
+      if (fallbackError) throw fallbackError
+
+      // Transformar los datos al formato esperado
+      const transformedData = fallbackData?.map(req => ({
+        id: req.id,
+        requester_id: req.requester_id,
+        created_at: req.created_at,
+        requester_name: req.requester?.nombre || req.requester?.first_name || req.requester?.email || 'Usuario',
+        requester_email: req.requester?.email,
+        requester_avatar_url: req.requester?.avatar_url
+      })) || []
+
+      return { data: transformedData, error: null }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo solicitudes pendientes de compañerismo:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener lista de compañeros
+export const getCompanions = async () => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) throw new Error('Usuario no autenticado')
+
+    // Intentar usar la función RPC primero
+    const { data, error } = await supabase.rpc('get_current_companions')
+
+    if (error) {
+      console.warn('RPC get_current_companions no encontrada, usando fallback con tabla:', error)
+
+      // Fallback: consultar directamente la tabla
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_companionships')
+        .select(`
+          id,
+          requester_id,
+          addressee_id,
+          created_at,
+          requester:profiles!requester_id(id, nombre, first_name, email, avatar_url),
+          addressee:profiles!addressee_id(id, nombre, first_name, email, avatar_url)
+        `)
+        .or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false })
+
+      if (fallbackError) throw fallbackError
+
+      // Transformar los datos al formato esperado
+      const transformedData = fallbackData?.map(comp => ({
+        companion_id: comp.requester_id === currentUser.id ? comp.addressee_id : comp.requester_id,
+        companion_name: comp.requester_id === currentUser.id
+          ? (comp.addressee?.nombre || comp.addressee?.first_name || comp.addressee?.email || 'Usuario')
+          : (comp.requester?.nombre || comp.requester?.first_name || comp.requester?.email || 'Usuario'),
+        companion_email: comp.requester_id === currentUser.id ? comp.addressee?.email : comp.requester?.email,
+        companion_avatar_url: comp.requester_id === currentUser.id ? comp.addressee?.avatar_url : comp.requester?.avatar_url,
+        companionship_date: comp.created_at
+      })) || []
+
+      return { data: transformedData, error: null }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error obteniendo compañeros:', error)
+    return { data: null, error }
+  }
+}
+
+// Obtener estado de compañerismo entre dos usuarios
+export const getCompanionshipStatus = async (otherUserId) => {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return { data: 'none', error: null }
+
+    const { data, error } = await supabase.rpc('can_send_companionship_request', {
+      target_user_id: otherUserId
+    })
+
+    if (error) throw error
+
+    if (data.can_send) {
+      return { data: 'none', error: null }
+    } else {
+      return { data: data.status || 'unknown', error: null }
+    }
+  } catch (error) {
+    console.error('Error obteniendo estado de compañerismo:', error)
+    return { data: 'none', error }
   }
 }
