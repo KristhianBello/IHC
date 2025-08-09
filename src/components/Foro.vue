@@ -548,7 +548,7 @@ import MapSelector from './MapSelector.vue'
 import {
   createPost,
   getPosts,
-  getPrioritizedPosts,
+  // getPrioritizedPosts, // Temporalmente comentado
   toggleLike,
   checkUserLike,
   updatePost as updatePostAPI,
@@ -677,14 +677,16 @@ const initializeUser = async () => {
 const loadPosts = async () => {
   loading.value = true
   try {
-    // Usar posts priorizados si el usuario está autenticado
-    const { data, error } = currentUser.value ?
-      await getPrioritizedPosts() :
-      await getPosts()
+    console.log('=== Cargando posts ===')
+    // Temporalmente usar siempre getPosts() hasta verificar las funciones RPC
+    const { data, error } = await getPosts()
+
+    console.log('Respuesta de getPosts:', { data: data?.length, error })
 
     if (error) throw error
 
     posts.value = data || []
+    console.log('Posts cargados en el componente:', posts.value.length)
 
     // Verificar likes del usuario para cada post
     for (const post of posts.value) {

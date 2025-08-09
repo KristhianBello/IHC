@@ -323,6 +323,8 @@ export const createPost = async (postData) => {
 
     // Agregar al "almacén" de publicaciones
     postsDatabase.unshift(newPost) // Agregar al inicio para mostrar las más recientes primero
+    console.log('Nueva publicación agregada. Total de posts:', postsDatabase.length)
+    console.log('Post agregado:', newPost)
 
     // Simular notificación WebSocket
     if (window.WebSocketSimulation) {
@@ -504,7 +506,10 @@ export const addPost = async (postData) => {
 }
 
 export const getPosts = async () => {
-  console.log('Obteniendo publicaciones desde la base de datos')
+  console.log('=== getPosts llamado ===')
+  console.log('Posts en memoria:', postsDatabase.length)
+  console.log('Primeros posts:', postsDatabase.slice(0, 2))
+  console.log('Todos los posts:', postsDatabase)
 
   // Retornar las publicaciones almacenadas en memoria
   return {
